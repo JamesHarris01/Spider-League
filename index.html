@@ -506,7 +506,7 @@
             <div style="background: rgba(255, 165, 0, 0.2); border: 2px solid rgba(255, 165, 0, 0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                 <strong style="color: #ffa500;">⚠️ Security Warning:</strong>
                 <p style="color: #ffcc00; margin-top: 8px; font-size: 0.95em;">
-                    Passwords are hashed and stored in a JSON file. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
+                    Your password will be hashed and stored in a GitHub Gist. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
                 </p>
             </div>
             <div id="loginForm">
@@ -741,7 +741,6 @@
         let battleState = null;
         let selectedBattleSpider = null;
         let taglines = [
-
             "Spider League: Because Therapy Was Booked",
             "Eight Legs, Zero Thoughts",
             "Your Mom's Favorite",
@@ -870,12 +869,18 @@
 
         function getUserInventory() {
             const user = users.find(u => u.username === currentUser);
-            return user ? user.inventory || {} : {};
+            if (!user) return {};
+            if (!user.inventory) {
+                user.inventory = {};
+            }
+            return user.inventory;
         }
 
         function setUserInventory(inventory) {
             const user = users.find(u => u.username === currentUser);
-            if (user) user.inventory = inventory;
+            if (user) {
+                user.inventory = inventory;
+            }
         }
 
         // ===== MOVE GENERATION =====
@@ -941,7 +946,7 @@
             // Additional warning before registration
             const confirmed = confirm(
                 '⚠️ SECURITY WARNING ⚠️\n\n' +
-                'Your password will be hashed and stored in a github gist.\n\n' +
+                'Your password will be hashed and stored in a GitHub Gist.\n\n' +
                 'DO NOT use a password you use for any other account!\n\n' +
                 'Only use a simple, unique password for this game.\n\n' +
                 'Click OK to confirm you understand and want to register.'
@@ -1761,6 +1766,11 @@
             }
 
             const user = users.find(u => u.username === currentUser);
+            if (!user) {
+                showStatus('shopStatus', 'User not found!', 'error');
+                return;
+            }
+            
             const price = shopPrices[itemKey];
 
             if (user.coins < price) {
@@ -1770,13 +1780,23 @@
 
             user.coins -= price;
             
-            const inventory = getUserInventory();
+            // Initialize inventory if it doesn't exist
+            if (!user.inventory) {
+                user.inventory = {};
+            }
+            
+            const inventory = user.inventory;
             inventory[itemKey] = (inventory[itemKey] || 0) + 1;
-            setUserInventory(inventory);
 
             if (await saveData()) {
                 showStatus('shopStatus', `Purchased ${itemKey}!`, 'success');
+                updateCoins();
                 renderInventory();
+            } else {
+                // Rollback if save failed
+                user.coins += price;
+                inventory[itemKey]--;
+                showStatus('shopStatus', 'Purchase failed - please try again', 'error');
             }
         }
 
