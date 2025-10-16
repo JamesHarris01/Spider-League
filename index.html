@@ -534,6 +534,7 @@
             <button class="tab-btn active" onclick="switchTab('collection')">🕸️ Collection</button>
             <button class="tab-btn" onclick="switchTab('add')">➕ Add Spider</button>
             <button class="tab-btn" onclick="switchTab('battle')">⚔️ Battle</button>
+            <button class="tab-btn" onclick="switchTab('trade')">🔄 Trade</button>
             <button class="tab-btn" onclick="switchTab('shop')">🛒 Shop & Inventory</button>
             <button class="tab-btn hidden" onclick="switchTab('admin')" id="adminTab">👑 Admin</button>
         </div>
@@ -591,6 +592,32 @@
                     <div class="spider-grid" id="battleOpponents"></div>
                 </div>
                 <div id="battleArenaPhase" class="hidden"></div>
+            </div>
+        </div>
+
+        <!-- Trade Tab -->
+        <div id="tradeTab" class="tab-content">
+            <div class="config-section">
+                <h2>🔄 Trade Center</h2>
+                
+                <!-- Incoming Trade Offers -->
+                <div style="background: rgba(78, 205, 196, 0.1); border: 2px solid rgba(78, 205, 196, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: #4ecdc4; margin-bottom: 10px;">📥 Incoming Trade Offers</h3>
+                    <div id="incomingTrades"></div>
+                </div>
+
+                <!-- Outgoing Trade Offers -->
+                <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: #ffa500; margin-bottom: 10px;">📤 Outgoing Trade Offers</h3>
+                    <div id="outgoingTrades"></div>
+                </div>
+
+                <!-- Make New Trade Offer -->
+                <div>
+                    <h3 style="color: #4ecdc4; margin-bottom: 15px;">✨ Create Trade Offer</h3>
+                    <p style="color: #aaa; margin-bottom: 15px;">Select one of your spiders to offer in trade:</p>
+                    <div class="spider-grid" id="tradeMySpiders"></div>
+                </div>
             </div>
         </div>
 
@@ -740,6 +767,7 @@
         let currentFilter = 'all';
         let battleState = null;
         let selectedBattleSpider = null;
+        let tradeOffers = [];
         let taglines = [
             "Spider League: Because Therapy Was Booked",
             "Eight Legs, Zero Thoughts",
@@ -826,6 +854,9 @@
             } else if (tab === 'battle') {
                 document.getElementById('battleTab').classList.add('active');
                 renderBattleSelect();
+            } else if (tab === 'trade') {
+                document.getElementById('tradeTab').classList.add('active');
+                renderTradeTab();
             } else if (tab === 'shop') {
                 document.getElementById('shopTab').classList.add('active');
                 updateShopPrices();
@@ -1030,6 +1061,7 @@
                 shopPrices = content.shopPrices || shopPrices;
                 MOVE_LIST = content.moveList || MOVE_LIST;
                 taglines = content.taglines || taglines;
+                tradeOffers = content.tradeOffers || [];
                 
                 renderSpiders();
                 updateCoins();
@@ -1047,7 +1079,7 @@
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers };
 
             try {
                 if (!config.gistId) {
@@ -1729,7 +1761,246 @@
             renderBattleSelect();
         }
 
+        // ===== TRADING SYSTEM =====
+        function renderTradeTab() {
+            if (!currentUser) {
+                document.getElementById('incomingTrades').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
+                document.getElementById('outgoingTrades').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
+                document.getElementById('tradeMySpiders').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
+                return;
+            }
+
+            renderIncomingTrades();
+            renderOutgoingTrades();
+            renderMyTradableSpiders();
+        }
+
+        function renderIncomingTrades() {
+            const incoming = tradeOffers.filter(offer => offer.toUser === currentUser && offer.status === 'pending');
+            const container = document.getElementById('incomingTrades');
+
+            if (incoming.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No incoming trade offers</p>';
+                return;
+            }
+
+            container.innerHTML = incoming.map(offer => {
+                const offeredSpider = spiders.find(s => s.id === offer.spiderId);
+                if (!offeredSpider) return '';
+
+                return `
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <img src="${offeredSpider.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <h4 style="color: #4ecdc4; margin-bottom: 5px;">${offeredSpider.name}</h4>
+                                <p style="color: #aaa; font-size: 0.9em;">From: <strong>${offer.fromUser}</strong></p>
+                                <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
+                                ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
+                            </div>
+                            <div style="display: flex; gap: 10px; flex-direction: column;">
+                                <button onclick="acceptTrade('${offer.id}')" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); margin: 0;">✓ Accept</button>
+                                <button onclick="rejectTrade('${offer.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin: 0;">✕ Reject</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderOutgoingTrades() {
+            const outgoing = tradeOffers.filter(offer => offer.fromUser === currentUser && offer.status === 'pending');
+            const container = document.getElementById('outgoingTrades');
+
+            if (outgoing.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No outgoing trade offers</p>';
+                return;
+            }
+
+            container.innerHTML = outgoing.map(offer => {
+                const offeredSpider = spiders.find(s => s.id === offer.spiderId);
+                if (!offeredSpider) return '';
+
+                return `
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <img src="${offeredSpider.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <h4 style="color: #ffa500; margin-bottom: 5px;">${offeredSpider.name}</h4>
+                                <p style="color: #aaa; font-size: 0.9em;">To: <strong>${offer.toUser}</strong></p>
+                                <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
+                                ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
+                                <p style="color: #888; font-size: 0.8em; margin-top: 5px;">⏳ Waiting for response...</p>
+                            </div>
+                            <button onclick="cancelTrade('${offer.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin: 0;">Cancel</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMyTradableSpiders() {
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
+            const container = document.getElementById('tradeMySpiders');
+
+            if (mySpiders.length === 0) {
+                container.innerHTML = '<p style="color: #666;">You have no spiders to trade!</p>';
+                return;
+            }
+
+            container.innerHTML = mySpiders.map(spider => `
+                <div class="spider-card" style="cursor: pointer;" onclick="initiateTradeOffer(${spider.id})">
+                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                    <div class="spider-name">${spider.name}</div>
+                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                    <div class="stat"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
+                    <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
+                    <button>Offer in Trade</button>
+                </div>
+            `).join('');
+        }
+
+        function initiateTradeOffer(spiderId) {
+            const spider = spiders.find(s => s.id === spiderId);
+            if (!spider || spider.owner !== currentUser) {
+                alert('Cannot trade this spider!');
+                return;
+            }
+
+            const allUsers = users.map(u => u.username).filter(u => u !== currentUser);
+            if (allUsers.length === 0) {
+                alert('No other users to trade with!');
+                return;
+            }
+
+            const recipient = prompt(`Trade ${spider.name} to which user?\n\nAvailable users:\n${allUsers.join(', ')}`);
+            if (!recipient) return;
+
+            if (!users.find(u => u.username === recipient)) {
+                alert('User not found!');
+                return;
+            }
+
+            if (recipient === currentUser) {
+                alert('Cannot trade with yourself!');
+                return;
+            }
+
+            const coinsInput = prompt(`Add coins to the trade? (0 for no coins)\n\nYour balance: ${users.find(u => u.username === currentUser).coins} coins`);
+            const coins = parseInt(coinsInput) || 0;
+
+            if (coins < 0) {
+                alert('Invalid coin amount!');
+                return;
+            }
+
+            if (coins > users.find(u => u.username === currentUser).coins) {
+                alert('Not enough coins!');
+                return;
+            }
+
+            const message = prompt('Add a message? (optional)') || '';
+
+            createTradeOffer(spiderId, recipient, coins, message);
+        }
+
+        async function createTradeOffer(spiderId, toUser, coins, message) {
+            const offer = {
+                id: `trade_${Date.now()}`,
+                fromUser: currentUser,
+                toUser: toUser,
+                spiderId: spiderId,
+                coins: coins,
+                message: message,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            tradeOffers.push(offer);
+
+            if (await saveData()) {
+                alert('Trade offer sent!');
+                renderTradeTab();
+            }
+        }
+
+        async function acceptTrade(offerId) {
+            const offer = tradeOffers.find(o => o.id === offerId);
+            if (!offer || offer.toUser !== currentUser) {
+                alert('Invalid trade offer!');
+                return;
+            }
+
+            const spider = spiders.find(s => s.id === offer.spiderId);
+            if (!spider) {
+                alert('Spider not found!');
+                return;
+            }
+
+            if (!confirm(`Accept trade for ${spider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}?`)) {
+                return;
+            }
+
+            // Transfer spider
+            spider.ownerHistory = spider.ownerHistory || [spider.owner];
+            spider.ownerHistory.push(currentUser);
+            spider.owner = currentUser;
+
+            // Transfer coins
+            if (offer.coins > 0) {
+                const fromUser = users.find(u => u.username === offer.fromUser);
+                const toUser = users.find(u => u.username === offer.toUser);
+                fromUser.coins -= offer.coins;
+                toUser.coins += offer.coins;
+            }
+
+            // Mark offer as accepted
+            offer.status = 'accepted';
+
+            if (await saveData()) {
+                alert('Trade accepted!');
+                renderTradeTab();
+                updateCoins();
+            }
+        }
+
+        async function rejectTrade(offerId) {
+            const offer = tradeOffers.find(o => o.id === offerId);
+            if (!offer || offer.toUser !== currentUser) {
+                alert('Invalid trade offer!');
+                return;
+            }
+
+            offer.status = 'rejected';
+
+            if (await saveData()) {
+                alert('Trade rejected');
+                renderTradeTab();
+            }
+        }
+
+        async function cancelTrade(offerId) {
+            const offer = tradeOffers.find(o => o.id === offerId);
+            if (!offer || offer.fromUser !== currentUser) {
+                alert('Invalid trade offer!');
+                return;
+            }
+
+            if (!confirm('Cancel this trade offer?')) return;
+
+            offer.status = 'cancelled';
+
+            if (await saveData()) {
+                alert('Trade cancelled');
+                renderTradeTab();
+            }
+        }
+
         // ===== SHOP & INVENTORY =====
+        let isProcessingPurchase = false; // Prevent double-clicks
+
         function updateShopPrices() {
             document.getElementById('pricePotion').textContent = shopPrices.potion;
             document.getElementById('priceSuperPotion').textContent = shopPrices.superPotion;
@@ -1760,6 +2031,12 @@
         }
 
         async function buyShopItem(itemKey) {
+            // Prevent rapid clicking
+            if (isProcessingPurchase) {
+                showStatus('shopStatus', 'Please wait, processing...', 'error');
+                return;
+            }
+
             if (!currentUser) {
                 showStatus('shopStatus', 'Please login first!', 'error');
                 return;
@@ -1767,36 +2044,70 @@
 
             const user = users.find(u => u.username === currentUser);
             if (!user) {
-                showStatus('shopStatus', 'User not found!', 'error');
+                showStatus('shopStatus', 'User not found! Please login again.', 'error');
                 return;
             }
-            
+
             const price = shopPrices[itemKey];
-
-            if (user.coins < price) {
-                showStatus('shopStatus', `Not enough coins! Need ${price} coins.`, 'error');
+            if (!price) {
+                showStatus('shopStatus', 'Invalid item!', 'error');
                 return;
             }
 
-            user.coins -= price;
-            
-            // Initialize inventory if it doesn't exist
-            if (!user.inventory) {
-                user.inventory = {};
+            // Check if user has enough coins
+            const currentCoins = user.coins || 0;
+            if (currentCoins < price) {
+                showStatus('shopStatus', `Not enough coins! You have ${currentCoins}, need ${price} coins.`, 'error');
+                return;
             }
-            
-            const inventory = user.inventory;
-            inventory[itemKey] = (inventory[itemKey] || 0) + 1;
 
-            if (await saveData()) {
-                showStatus('shopStatus', `Purchased ${itemKey}!`, 'success');
-                updateCoins();
-                renderInventory();
-            } else {
-                // Rollback if save failed
-                user.coins += price;
-                inventory[itemKey]--;
+            // Lock purchasing
+            isProcessingPurchase = true;
+
+            try {
+                // Deduct coins
+                user.coins = currentCoins - price;
+                
+                // Initialize inventory if it doesn't exist
+                if (!user.inventory) {
+                    user.inventory = {};
+                }
+                
+                // Add item to inventory
+                user.inventory[itemKey] = (user.inventory[itemKey] || 0) + 1;
+
+                // Save data
+                const saveSuccess = await saveData();
+                
+                if (saveSuccess) {
+                    showStatus('shopStatus', `Successfully purchased ${itemKey}!`, 'success');
+                    updateCoins();
+                    renderInventory();
+                } else {
+                    // Rollback on save failure
+                    user.coins = currentCoins;
+                    user.inventory[itemKey]--;
+                    if (user.inventory[itemKey] <= 0) {
+                        delete user.inventory[itemKey];
+                    }
+                    showStatus('shopStatus', 'Purchase failed - please try again', 'error');
+                }
+            } catch (error) {
+                console.error('Purchase error:', error);
+                // Rollback on any error
+                user.coins = currentCoins;
+                if (user.inventory[itemKey]) {
+                    user.inventory[itemKey]--;
+                    if (user.inventory[itemKey] <= 0) {
+                        delete user.inventory[itemKey];
+                    }
+                }
                 showStatus('shopStatus', 'Purchase failed - please try again', 'error');
+            } finally {
+                // Unlock purchasing after a short delay
+                setTimeout(() => {
+                    isProcessingPurchase = false;
+                }, 500);
             }
         }
 
