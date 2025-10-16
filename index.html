@@ -440,6 +440,36 @@
             border-radius: 12px;
             font-size: 12px;
             margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .refresh-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(78, 205, 196, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        .refresh-status.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -609,6 +639,7 @@
         let currentUserPassword = '';
         let selectedSpiderForTrade = null;
         let tradeModalSourceSpider = null;
+        let autoRefreshInterval = null;
 
         function loadConfig() {
             // Load saved config from browser
@@ -622,6 +653,7 @@
                 if (config.githubToken && config.gistId) {
                     loadSpiders();
                     updateConfigStatus();
+                    startAutoRefresh(); // Start checking for updates
                 }
             } else {
                 // First time - show settings
@@ -635,6 +667,7 @@
                 currentUser = savedUser;
                 currentUserPassword = savedPassword;
                 showUserInfo();
+                startAutoRefresh(); // Start auto-refresh for logged in user
             }
         }
 
@@ -790,6 +823,9 @@
             renderLeaderboard();
             renderTradeRequests();
             updateTradesBadge();
+            
+            // Start auto-refresh
+            startAutoRefresh();
         }
 
         function logout() {
@@ -801,6 +837,9 @@
             localStorage.removeItem('spiderLeaguePassword');
             
             showLoginForm();
+            
+            // Stop auto-refresh
+            stopAutoRefresh();
             
             // Clear displays
             document.getElementById('spiderGrid').innerHTML = '<p style="color: #666;">Please login to view spiders</p>';
@@ -896,16 +935,82 @@
                 const data = await response.json();
                 const content = data.files['spider-league.json'].content;
                 const parsed = JSON.parse(content);
+                
+                // Check for new trade requests
+                const oldTradeCount = tradeRequests.filter(tr => tr.toUser === currentUser).length;
+                const newTradeCount = (parsed.tradeRequests || []).filter(tr => tr.toUser === currentUser).length;
+                
                 spiders = parsed.spiders || [];
                 tradeRequests = parsed.tradeRequests || [];
                 users = parsed.users || [];
+                
                 renderSpiders();
                 renderLeaderboard();
                 renderTradeRequests();
                 updateTradesBadge();
+                
+                // Show notification if new trades received
+                if (currentUser && newTradeCount > oldTradeCount) {
+                    const newTrades = newTradeCount - oldTradeCount;
+                    showRefreshNotification(`🔔 ${newTrades} new trade request${newTrades > 1 ? 's' : ''}!`);
+                    
+                    // Play a sound notification (optional)
+                    playNotificationSound();
+                }
+                
                 showStatus('configStatus', 'Data loaded successfully!', 'success');
             } catch (error) {
                 showStatus('configStatus', 'Error loading: ' + error.message, 'error');
+            }
+        }
+
+        function showRefreshNotification(message) {
+            const status = document.getElementById('refreshStatus');
+            status.textContent = message;
+            status.classList.add('show');
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+
+        function playNotificationSound() {
+            // Create a simple beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        function startAutoRefresh() {
+            // Stop any existing interval
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            // Only auto-refresh if configured and logged in
+            if (config.githubToken && config.gistId && currentUser) {
+                // Refresh every 15 seconds
+                autoRefreshInterval = setInterval(() => {
+                    loadSpiders();
+                }, 15000);
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
             }
         }
 
