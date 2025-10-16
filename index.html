@@ -514,7 +514,7 @@
             transform: translateY(0);
         }
         
-        .bug-report-modal {
+        .bug-report-modal, .login-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -528,11 +528,11 @@
             padding: 20px;
         }
         
-        .bug-report-modal.active {
+        .bug-report-modal.active, .login-modal.active {
             display: flex;
         }
         
-        .bug-report-content {
+        .bug-report-content, .login-content {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             border-radius: 15px;
             padding: 30px;
@@ -543,7 +543,7 @@
             border: 2px solid #4ecdc4;
         }
         
-        .bug-report-content h2 {
+        .bug-report-content h2, .login-content h2 {
             color: #4ecdc4;
             margin-bottom: 20px;
         }
@@ -572,9 +572,11 @@
             <p id="tagline">Pokemon-Style Spider Battles!</p>
         </header>
 
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button onclick="toggleConfig()">⚙️ Settings</button>
-            <span class="user-coins" id="userCoins">💰 0 coins</span>
+        <div style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <button onclick="toggleConfig()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">⚙️ Settings</button>
+            <span class="user-coins" id="userCoins" style="cursor: pointer;" onclick="openLoginModal()">💰 0 coins</span>
+            <button onclick="openLoginModal()" id="loginBtn" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">👤 Login / Register</button>
+            <button onclick="logout()" id="logoutBtn" class="hidden" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🚪 Logout</button>
         </div>
 
         <div id="configSection" class="config-section hidden">
@@ -592,40 +594,11 @@
             <div id="configStatus"></div>
         </div>
 
-        <div class="config-section">
-            <h2>👤 Login / Register</h2>
-            <div style="background: rgba(255, 165, 0, 0.2); border: 2px solid rgba(255, 165, 0, 0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <strong style="color: #ffa500;">⚠️ Security Warning:</strong>
-                <p style="color: #ffcc00; margin-top: 8px; font-size: 0.95em;">
-                    Your password will be hashed and stored in a GitHub Gist. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
-                </p>
-            </div>
-            <div id="loginForm">
-                <div class="input-group">
-                    <label>Username:</label>
-                    <input type="text" id="username" placeholder="Enter username">
-                </div>
-                <div class="input-group">
-                    <label>Password (use a unique password!):</label>
-                    <input type="password" id="password" placeholder="Enter a simple, unique password">
-                </div>
-                <button onclick="login()">Login</button>
-                <button onclick="register()">Register</button>
-                <div id="loginStatus"></div>
-            </div>
-            <div id="userInfo" class="hidden">
-                <p style="font-size: 1.2em; margin-bottom: 10px;">
-                    Logged in as: <strong id="displayUsername"></strong>
-                </p>
-                <button onclick="logout()">Logout</button>
-            </div>
-        </div>
-
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('collection')">🕸️ Collection</button>
             <button class="tab-btn" onclick="switchTab('add')">➕ Add Spider</button>
             <button class="tab-btn" onclick="switchTab('battle')" id="battleTabBtn">⚔️ Battle</button>
-            <button class="tab-btn" onclick="switchTab('trade')">🔄 Trade</button>
+            <button class="tab-btn" onclick="switchTab('trade')" id="tradeTabBtn">🔄 Trade</button>
             <button class="tab-btn" onclick="switchTab('shop')">🛒 Shop & Inventory</button>
             <button class="tab-btn hidden" onclick="switchTab('admin')" id="adminTab">👑 Admin</button>
         </div>
@@ -829,6 +802,33 @@
             🐛 Report Bug
         </button>
 
+        <!-- Login Modal -->
+        <div id="loginModal" class="login-modal" onclick="closeLoginModalOnOverlay(event)">
+            <div class="login-content" onclick="event.stopPropagation()">
+                <h2>👤 Login / Register</h2>
+                <div style="background: rgba(255, 165, 0, 0.2); border: 2px solid rgba(255, 165, 0, 0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <strong style="color: #ffa500;">⚠️ Security Warning:</strong>
+                    <p style="color: #ffcc00; margin-top: 8px; font-size: 0.95em;">
+                        Your password will be hashed and stored in a GitHub Gist. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
+                    </p>
+                </div>
+                <div class="input-group">
+                    <label>Username:</label>
+                    <input type="text" id="username" placeholder="Enter username">
+                </div>
+                <div class="input-group">
+                    <label>Password (use a unique password!):</label>
+                    <input type="password" id="password" placeholder="Enter a simple, unique password">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="login()" style="flex: 1; background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">Login</button>
+                    <button onclick="register()" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">Register</button>
+                </div>
+                <button onclick="closeLoginModal()" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Cancel</button>
+                <div id="loginStatus"></div>
+            </div>
+        </div>
+
         <!-- Bug Report Modal -->
         <div id="bugReportModal" class="bug-report-modal" onclick="closeBugReportOnOverlay(event)">
             <div class="bug-report-content" onclick="event.stopPropagation()">
@@ -917,6 +917,7 @@
         let customFieldsCount = 0;
         let uploadedImageData = null; // Store uploaded image as base64
         let bugReports = [];
+        let activeBattles = []; // Track ongoing battles
         let taglines = [
             "Spider League: Because Therapy Was Booked",
             "Eight Legs, Zero Thoughts",
@@ -987,6 +988,63 @@
         }
 
         // ===== UTILITY FUNCTIONS =====
+        function calculateXpForLevel(level) {
+            // Exponential growth: 100 * (level ^ 1.5)
+            return Math.floor(100 * Math.pow(level, 1.5));
+        }
+        
+        function calculateXpReward(enemyLevel, won) {
+            const xpForNextLevel = calculateXpForLevel(enemyLevel);
+            const baseXp = Math.floor(xpForNextLevel * 0.05);
+            return won ? baseXp : Math.floor(baseXp * 0.5);
+        }
+        
+        function levelUpSpider(spider) {
+            spider.level++;
+            spider.xp = 0;
+            
+            // Random stat increases (1-3 points each)
+            const strengthGain = Math.floor(Math.random() * 3) + 1;
+            const speedGain = Math.floor(Math.random() * 3) + 1;
+            const hpGain = Math.floor(Math.random() * 15) + 5; // 5-20 HP gain
+            
+            spider.strength += strengthGain;
+            spider.speed += speedGain;
+            spider.maxHp += hpGain;
+            spider.hp += hpGain; // Also increase current HP
+            
+            return {
+                strengthGain,
+                speedGain,
+                hpGain
+            };
+        }
+        
+        function addXpToSpider(spider, xp) {
+            if (!spider.xp) spider.xp = 0;
+            
+            spider.xp += xp;
+            const xpNeeded = calculateXpForLevel(spider.level);
+            
+            const levelUps = [];
+            while (spider.xp >= xpNeeded) {
+                const gains = levelUpSpider(spider);
+                levelUps.push({
+                    level: spider.level,
+                    gains: gains
+                });
+                
+                // Recalculate for next level
+                if (spider.xp >= calculateXpForLevel(spider.level)) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            
+            return levelUps;
+        }
+
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -1117,6 +1175,7 @@
             } else if (tab === 'trade') {
                 document.getElementById('tradeTab').classList.add('active');
                 renderTradeTab();
+                updateTradeTabIndicator();
             } else if (tab === 'shop') {
                 document.getElementById('shopTab').classList.add('active');
                 updateShopPrices();
@@ -1143,19 +1202,44 @@
         }
 
         function showUserInfo() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('userInfo').classList.remove('hidden');
-            document.getElementById('displayUsername').textContent = currentUser;
+            document.getElementById('loginBtn').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
             if (currentUser === 'admin') {
                 document.getElementById('adminTab').classList.remove('hidden');
             }
             updateCoins();
+            closeLoginModal();
         }
 
         function updateCoins() {
             const user = users.find(u => u.username === currentUser);
             const coins = user ? user.coins || 0 : 0;
-            document.getElementById('userCoins').textContent = `💰 ${coins} coins`;
+            const coinsDisplay = document.getElementById('userCoins');
+            
+            if (currentUser) {
+                coinsDisplay.textContent = `💰 ${coins} coins`;
+                coinsDisplay.title = `Logged in as ${currentUser}`;
+            } else {
+                coinsDisplay.textContent = '💰 Login';
+                coinsDisplay.title = 'Click to login';
+            }
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginStatus').innerHTML = '';
+        }
+
+        function closeLoginModalOnOverlay(event) {
+            if (event.target.id === 'loginModal') {
+                closeLoginModal();
+            }
         }
 
         function getUserInventory() {
@@ -1179,9 +1263,19 @@
             const shuffled = [...MOVE_LIST].sort(() => Math.random() - 0.5);
             const moves = shuffled.slice(0, 4).map(move => ({
                 ...move,
-                power: move.basePower + Math.floor(spider.level * 2)
+                power: move.basePower + Math.floor(spider.level * 3) // Level scaling: +3 power per level
             }));
             return moves;
+        }
+        
+        function updateMovePower(spider) {
+            // Update move power when spider levels up
+            if (spider.moves) {
+                spider.moves = spider.moves.map(move => ({
+                    ...move,
+                    power: move.basePower + Math.floor(spider.level * 3)
+                }));
+            }
         }
 
         // ===== CONFIG & AUTH =====
@@ -1260,8 +1354,6 @@
                 window.localStorage.setItem('spiderUser', username);
                 showUserInfo();
                 showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
             }
         }
 
@@ -1281,8 +1373,6 @@
                 window.localStorage.setItem('spiderUser', username);
                 showUserInfo();
                 showStatus('loginStatus', 'Logged in successfully!', 'success');
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
                 renderSpiders();
             } else {
                 showStatus('loginStatus', 'Invalid username or password!', 'error');
@@ -1293,9 +1383,10 @@
             if (!confirm('Logout?')) return;
             currentUser = '';
             window.localStorage.removeItem('spiderUser');
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('loginBtn').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
             document.getElementById('adminTab').classList.add('hidden');
+            updateCoins();
             renderSpiders();
         }
 
@@ -1326,12 +1417,14 @@
                 taglines = content.taglines || taglines;
                 tradeOffers = content.tradeOffers || [];
                 bugReports = content.bugReports || [];
+                activeBattles = content.activeBattles || [];
                 
                 renderSpiders();
                 updateCoins();
                 updateShopPrices();
                 renderInventory();
                 updateTagline();
+                updateTradeTabIndicator();
             } catch (error) {
                 console.error('Load error:', error);
             }
@@ -1365,7 +1458,7 @@
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports, activeBattles };
 
             try {
                 if (!config.gistId) {
@@ -1461,6 +1554,7 @@
                 speed,
                 customFields: customFields,
                 level: 1,
+                xp: 0,
                 hp: 100,
                 maxHp: 100,
                 wins: 0,
@@ -1544,14 +1638,30 @@
                     `Previous owners: ${ownerHistory.slice(0, -1).join(' → ')}` : '';
 
                 const moveNames = spider.moves ? spider.moves.map(m => m.name).join(', ') : 'Moves will be assigned';
+                const isDead = spider.hp <= 0;
+                
+                // XP System
+                const currentXp = spider.xp || 0;
+                const xpNeeded = calculateXpForLevel(spider.level);
+                const xpPercent = (currentXp / xpNeeded) * 100;
 
                 return `
-                    <div class="spider-card">
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                    <div class="spider-card" style="${isDead ? 'opacity: 0.6; border: 2px solid rgba(255, 87, 108, 0.5);' : ''}">
+                        ${isDead ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">💀 FAINTED</div>' : ''}
+                        <img src="${spider.image}" class="spider-image" alt="${spider.name}" style="${isDead ? 'filter: grayscale(100%);' : ''}">
                         <div class="spider-name">${spider.name}</div>
                         ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
                         <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                        <div class="stat"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
+                        <div style="margin: 8px 0;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                <span style="font-size: 0.85em; color: #aaa;">XP to Next Level:</span>
+                                <span style="font-size: 0.85em; color: #4ecdc4;">${currentXp} / ${xpNeeded}</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: rgba(0, 0, 0, 0.5); border-radius: 10px; overflow: hidden;">
+                                <div style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: ${xpPercent}%; transition: width 0.5s;"></div>
+                            </div>
+                        </div>
+                        <div class="stat ${isDead ? 'style="background: rgba(255, 87, 108, 0.2);"' : ''}"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
                         ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
@@ -1562,6 +1672,16 @@
                         <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
                         ${historyText ? `<div class="owner-history">${historyText}</div>` : ''}
                         <div class="move-list">Moves: ${moveNames}</div>
+                        ${(spider.owner === currentUser && isDead) ? `
+                            <div style="background: rgba(255, 165, 0, 0.2); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                                <p style="color: #ffa500; font-size: 0.9em; margin-bottom: 8px;">💊 Revive Spider:</p>
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    <button onclick="useItemOnSpider(${spider.id}, 'potion', 20)" style="flex: 1; padding: 8px; font-size: 0.85em;">Potion (+20)</button>
+                                    <button onclick="useItemOnSpider(${spider.id}, 'superPotion', 50)" style="flex: 1; padding: 8px; font-size: 0.85em;">Super (+50)</button>
+                                    <button onclick="useItemOnSpider(${spider.id}, 'fullRestore', 999)" style="flex: 1; padding: 8px; font-size: 0.85em;">Full Restore</button>
+                                </div>
+                            </div>
+                        ` : ''}
                         ${spider.owner === currentUser || currentUser === 'admin' ? `<button onclick="deleteSpider(${spider.id})" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
                     </div>
                 `;
@@ -1571,6 +1691,13 @@
         }
 
         // ===== BATTLE SYSTEM =====
+        function isSpiderInBattle(spiderId) {
+            // Check if spider is in any active battle
+            return activeBattles.some(battle => 
+                battle.playerSpiderId === spiderId || battle.enemySpiderId === spiderId
+            );
+        }
+
         function renderBattleSelect() {
             const grid = document.getElementById('battleSelectSpiders');
             const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.hp > 0);
@@ -1580,23 +1707,34 @@
                 return;
             }
 
-            grid.innerHTML = mySpiders.map(spider => `
-                <div class="spider-card" style="cursor: pointer;" onclick="selectBattleSpider(${spider.id})">
-                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                    <div class="spider-name">${spider.name}</div>
-                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                    <div class="hp-bar">
-                        <div class="hp-fill ${spider.hp < spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(spider.hp / spider.maxHp) * 100}%">
-                            HP: ${spider.hp}/${spider.maxHp}
+            grid.innerHTML = mySpiders.map(spider => {
+                const inBattle = isSpiderInBattle(spider.id);
+                return `
+                    <div class="spider-card" style="cursor: ${inBattle ? 'not-allowed' : 'pointer'}; opacity: ${inBattle ? '0.5' : '1'};" ${!inBattle ? `onclick="selectBattleSpider(${spider.id})"` : ''}>
+                        ${inBattle ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⚔️ In Battle</div>' : ''}
+                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                        <div class="spider-name">${spider.name}</div>
+                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                        <div class="hp-bar">
+                            <div class="hp-fill ${spider.hp < spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(spider.hp / spider.maxHp) * 100}%">
+                                HP: ${spider.hp}/${spider.maxHp}
+                            </div>
                         </div>
+                        ${!inBattle ? '<button>Select for Battle</button>' : '<button disabled>Spider is Busy</button>'}
                     </div>
-                    <button>Select for Battle</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function selectBattleSpider(spiderId) {
-            selectedBattleSpider = spiders.find(s => s.id === spiderId);
+            const spider = spiders.find(s => s.id === spiderId);
+            
+            if (isSpiderInBattle(spiderId)) {
+                alert('This spider is already in a battle!');
+                return;
+            }
+            
+            selectedBattleSpider = spider;
             if (!selectedBattleSpider.moves) {
                 selectedBattleSpider.moves = generateMoves(selectedBattleSpider);
             }
@@ -1615,20 +1753,30 @@
                 return;
             }
 
-            grid.innerHTML = opponents.map(spider => `
-                <div class="spider-card" style="cursor: pointer;" onclick="proposeWager(${spider.id})">
-                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                    <div class="spider-name">${spider.name}</div>
-                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                    <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
-                    <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
-                    <button>Challenge!</button>
-                </div>
-            `).join('');
+            grid.innerHTML = opponents.map(spider => {
+                const inBattle = isSpiderInBattle(spider.id);
+                return `
+                    <div class="spider-card" style="cursor: ${inBattle ? 'not-allowed' : 'pointer'}; opacity: ${inBattle ? '0.5' : '1'};" ${!inBattle ? `onclick="proposeWager(${spider.id})"` : ''}>
+                        ${inBattle ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⚔️ In Battle</div>' : ''}
+                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                        <div class="spider-name">${spider.name}</div>
+                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                        <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
+                        <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
+                        ${!inBattle ? '<button>Challenge!</button>' : '<button disabled>Spider is Busy</button>'}
+                    </div>
+                `;
+            }).join('');
         }
 
         function proposeWager(opponentId) {
             const opponent = spiders.find(s => s.id === opponentId);
+            
+            if (isSpiderInBattle(opponentId)) {
+                alert('This spider is already in a battle!');
+                return;
+            }
+            
             const userCoins = users.find(u => u.username === currentUser).coins || 0;
             
             const wager = prompt(`Battle wager?\n\nYou have ${userCoins} coins.\nEnter amount to wager (0 for no wager):`);
@@ -1670,6 +1818,14 @@
                 canUseItems: true
             };
             
+            // Add to active battles
+            activeBattles.push({
+                id: `battle_${Date.now()}`,
+                playerSpiderId: selectedBattleSpider.id,
+                enemySpiderId: opponent.id,
+                startedAt: new Date().toISOString()
+            });
+            
             // Ensure effects are initialized
             battleState.player.effects = initBattleEffects();
             battleState.enemy.effects = initBattleEffects();
@@ -1690,6 +1846,9 @@
             
             // Update battle tab indicator
             updateBattleTabIndicator();
+            
+            // Save active battles
+            debouncedSave();
             
             renderBattle();
             
@@ -2046,6 +2205,10 @@
             const playerUser = users.find(u => u.username === currentUser);
             const enemyUser = users.find(u => u.username === enemySpider.owner);
 
+            // Calculate XP rewards
+            const playerXp = calculateXpReward(enemySpider.level, playerWon);
+            const enemyXp = calculateXpReward(playerSpider.level, !playerWon);
+
             if (playerWon) {
                 playerSpider.wins++;
                 enemySpider.losses++;
@@ -2070,11 +2233,42 @@
                 }
             }
 
+            // Award XP and check for level ups
+            const playerLevelUps = addXpToSpider(playerSpider, playerXp);
+            const enemyLevelUps = addXpToSpider(enemySpider, enemyXp);
+
+            battleState.log.push(`${playerSpider.name} gained ${playerXp} XP!`);
+            if (playerLevelUps.length > 0) {
+                playerLevelUps.forEach(lu => {
+                    battleState.log.push(`🎊 ${playerSpider.name} leveled up to Level ${lu.level}!`);
+                    battleState.log.push(`  +${lu.gains.strengthGain} STR, +${lu.gains.speedGain} SPD, +${lu.gains.hpGain} HP!`);
+                });
+            }
+
+            battleState.log.push(`${enemySpider.name} gained ${enemyXp} XP!`);
+            if (enemyLevelUps.length > 0) {
+                enemyLevelUps.forEach(lu => {
+                    battleState.log.push(`${enemySpider.name} leveled up to Level ${lu.level}!`);
+                });
+            }
+
+            // Remove from active battles
+            activeBattles = activeBattles.filter(b => 
+                b.playerSpiderId !== battleState.player.spider.id && 
+                b.enemySpiderId !== battleState.enemy.spider.id
+            );
+
             await saveData();
             renderBattle();
 
             setTimeout(() => {
-                alert(playerWon ? '🎉 You won the battle!' : '💔 You lost the battle!');
+                let message = playerWon ? '🎉 You won the battle!' : '💔 You lost the battle!';
+                if (playerLevelUps.length > 0) {
+                    message += `\n\n🎊 ${playerSpider.name} leveled up to Level ${playerSpider.level}!`;
+                    const lastLevelUp = playerLevelUps[playerLevelUps.length - 1];
+                    message += `\n+${lastLevelUp.gains.strengthGain} STR, +${lastLevelUp.gains.speedGain} SPD, +${lastLevelUp.gains.hpGain} HP!`;
+                }
+                alert(message);
                 backToBattleSelect();
             }, 3000);
         }
@@ -2112,6 +2306,28 @@
         }
 
         // ===== TRADING SYSTEM =====
+        function updateTradeTabIndicator() {
+            const tradeBtn = document.getElementById('tradeTabBtn');
+            if (!currentUser) {
+                tradeBtn.innerHTML = '🔄 Trade';
+                tradeBtn.style.animation = 'none';
+                return;
+            }
+            
+            const incomingTrades = tradeOffers.filter(offer => offer.toUser === currentUser && offer.status === 'pending');
+            
+            if (incomingTrades.length > 0) {
+                // Has incoming trades
+                tradeBtn.innerHTML = `🔄 Trade 🟢 ${incomingTrades.length}`;
+                tradeBtn.style.position = 'relative';
+                tradeBtn.style.animation = 'pulse 2s infinite';
+            } else {
+                // No incoming trades
+                tradeBtn.innerHTML = '🔄 Trade';
+                tradeBtn.style.animation = 'none';
+            }
+        }
+
         function renderTradeTab() {
             if (!currentUser) {
                 document.getElementById('incomingTrades').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
@@ -2338,6 +2554,9 @@
             // Update UI immediately
             renderTradeTab();
             
+            // Update trade indicator
+            updateTradeTabIndicator();
+            
             // Save in background
             if (await saveData()) {
                 showStatus('shopStatus', 'Trade offer sent!', 'success');
@@ -2410,6 +2629,9 @@
             renderTradeTab();
             updateCoins();
             
+            // Update trade indicator
+            updateTradeTabIndicator();
+            
             // Save in background
             if (await saveData()) {
                 alert('Trade accepted!');
@@ -2427,6 +2649,9 @@
 
             // Update UI immediately
             renderTradeTab();
+            
+            // Update trade indicator
+            updateTradeTabIndicator();
             
             // Save in background
             debouncedSave();
@@ -2446,12 +2671,48 @@
             // Update UI immediately
             renderTradeTab();
             
+            // Update trade indicator
+            updateTradeTabIndicator();
+            
             // Save in background
             debouncedSave();
         }
 
         // ===== SHOP & INVENTORY =====
         let isProcessingPurchase = false; // Prevent double-clicks
+
+        async function useItemOnSpider(spiderId, itemKey, healAmount) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+
+            const spider = spiders.find(s => s.id === spiderId);
+            if (!spider || spider.owner !== currentUser) {
+                alert('You can only use items on your own spiders!');
+                return;
+            }
+
+            const inventory = getUserInventory();
+            if (!inventory[itemKey] || inventory[itemKey] <= 0) {
+                alert(`You don't have any ${itemKey}! Buy some from the shop.`);
+                return;
+            }
+
+            // Use the item
+            inventory[itemKey]--;
+            setUserInventory(inventory);
+
+            // Heal the spider
+            const actualHeal = Math.min(healAmount, spider.maxHp - spider.hp);
+            spider.hp = Math.min(spider.hp + healAmount, spider.maxHp);
+
+            if (await saveData()) {
+                alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} HP and is now at ${spider.hp}/${spider.maxHp} HP!`);
+                renderSpiders();
+                renderInventory();
+            }
+        }
 
         function updateShopPrices() {
             document.getElementById('pricePotion').textContent = shopPrices.potion;
