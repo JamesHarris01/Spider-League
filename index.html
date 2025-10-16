@@ -478,7 +478,7 @@
     <div class="container">
         <header>
             <h1>🕷️ Spider League 🕷️</h1>
-            <p>Pokemon-Style Spider Battles!</p>
+            <p id="tagline">Pokemon-Style Spider Battles!</p>
         </header>
 
         <div style="text-align: center; margin-bottom: 20px;">
@@ -506,7 +506,7 @@
             <div style="background: rgba(255, 165, 0, 0.2); border: 2px solid rgba(255, 165, 0, 0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                 <strong style="color: #ffa500;">⚠️ Security Warning:</strong>
                 <p style="color: #ffcc00; margin-top: 8px; font-size: 0.95em;">
-                    Passwords are stored hashed, in a JSON file in Github. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
+                    Passwords are hashed and stored in a JSON file. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
                 </p>
             </div>
             <div id="loginForm">
@@ -673,6 +673,11 @@
                     </div>
                     <button onclick="saveShopPrices()">Save Shop Prices</button>
 
+                    <h3 style="color: #4ecdc4; margin-top: 30px;">💬 Daily Taglines</h3>
+                    <p style="color: #aaa; margin-bottom: 10px;">Edit the rotating taglines that appear in the header (one per line):</p>
+                    <textarea id="adminTaglines" rows="8" style="font-family: inherit; font-size: 14px;" placeholder="Enter one tagline per line..."></textarea>
+                    <button onclick="saveTaglines()">Save Taglines</button>
+
                     <h3 style="color: #4ecdc4; margin-top: 30px;">👥 User Management</h3>
                     <div id="usersList" style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;"></div>
                     
@@ -735,6 +740,46 @@
         let currentFilter = 'all';
         let battleState = null;
         let selectedBattleSpider = null;
+        let taglines = [
+
+            "Spider League: Because Therapy Was Booked",
+            "Eight Legs, Zero Thoughts",
+            "Your Mom's Favorite",
+            "Locally Sourced, Free-Range Spiders",
+            "We Have Spiders at Home",
+            "Spider League: It's Giving Arachnid",
+            "No Thoughts, Just Spiders",
+            "Spider League: Unhinged Since Tuesday",
+            "POV You are a Spider",
+            "Spiders But Make It Your Entire Personality",
+            "The Vibes Are Rancid",
+            "Chronically Online Spiders",
+            "This Could Have Been an Email",
+            "Eight Legs, No Brain Cells",
+            "It's Corn",
+            "Spiders fucking suck",
+            "We're All Just Raw-Dogging Reality",
+            "The Spiders Are Not Okay",
+            "Touch Grass? No, Touch Web",
+            "Screaming, Crying, Throwing Up",
+            "Vibes Are Immaculate and Also Terrible",
+            "An Existential Crisis Simulator",
+            "No Context, Just Vibes",
+            "For People Who Peak at Being Mid",
+            "Your K/D Is Embarrassing",
+            "You're the Reason We Can't Have Nice Things",
+            "Skill Issue, Honestly",
+            "Imagine Being This Bad at Spiders",
+            "Spider League: Unemployed Behavior",
+            "You've Been Playing for HOW Long?",
+            "This REALLY Fell Off",
+            "This Is Why No One Invites You to Parties",
+            "Your Duos Partner Carries You",
+            "Uninstall Challenge (Impossible)",
+            "You Can't Even Blame Lag",
+            "Touch Grass Speedrun Any%",
+            "Spider League: This Could've Been Sleep"
+        ];
 
         // Battle status effects
         function initBattleEffects() {
@@ -747,6 +792,22 @@
                 accuracyMod: 0,
                 charging: { active: false, move: null }
             };
+        }
+        
+        // Get daily tagline
+        function getDailyTagline() {
+            const today = new Date();
+            const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+            const index = dayOfYear % taglines.length;
+            return taglines[index];
+        }
+        
+        // Update tagline display
+        function updateTagline() {
+            const taglineElement = document.getElementById('tagline');
+            if (taglineElement) {
+                taglineElement.textContent = getDailyTagline();
+            }
         }
 
         // ===== UTILITY FUNCTIONS =====
@@ -880,7 +941,7 @@
             // Additional warning before registration
             const confirmed = confirm(
                 '⚠️ SECURITY WARNING ⚠️\n\n' +
-                'Your password will be stored in PLAIN TEXT in a GitHub Gist.\n\n' +
+                'Your password will be hashed and stored in a github gist.\n\n' +
                 'DO NOT use a password you use for any other account!\n\n' +
                 'Only use a simple, unique password for this game.\n\n' +
                 'Click OK to confirm you understand and want to register.'
@@ -963,11 +1024,13 @@
                 users = content.users || [];
                 shopPrices = content.shopPrices || shopPrices;
                 MOVE_LIST = content.moveList || MOVE_LIST;
+                taglines = content.taglines || taglines;
                 
                 renderSpiders();
                 updateCoins();
                 updateShopPrices();
                 renderInventory();
+                updateTagline();
             } catch (error) {
                 console.error('Load error:', error);
             }
@@ -979,7 +1042,7 @@
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines };
 
             try {
                 if (!config.gistId) {
@@ -1766,6 +1829,7 @@
             document.getElementById('adminPricePotion').value = shopPrices.potion;
             document.getElementById('adminPriceSuperPotion').value = shopPrices.superPotion;
             document.getElementById('adminPriceFullRestore').value = shopPrices.fullRestore;
+            document.getElementById('adminTaglines').value = taglines.join('\n');
 
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = users.map(user => `
@@ -1825,6 +1889,23 @@
                 updateShopPrices();
             }
         }
+        
+        async function saveTaglines() {
+            const taglinesText = document.getElementById('adminTaglines').value;
+            const lines = taglinesText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            if (lines.length === 0) {
+                showStatus('adminStatus', 'Please enter at least one tagline!', 'error');
+                return;
+            }
+            
+            taglines = lines;
+            
+            if (await saveData()) {
+                showStatus('adminStatus', `Taglines updated! (${taglines.length} total)`, 'success');
+                updateTagline();
+            }
+        }
 
         async function deleteUser(username) {
             if (!confirm(`Delete user ${username}?`)) return;
@@ -1836,6 +1917,7 @@
 
         // ===== INITIALIZATION =====
         loadConfig();
+        updateTagline();
     </script>
 </body>
 </html>
