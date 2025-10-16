@@ -597,12 +597,6 @@
     </div>
 
     <script>
-        // ⚙️ CONFIGURATION - Set these values once and everyone uses them automatically
-        const AUTO_CONFIG = {
-            githubToken: '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', // Paste your GitHub token here: 'ghp_xxxxx...'
-            gistId: ''       // Paste your Gist ID here after first setup
-        };
-
         let config = {
             githubToken: '',
             gistId: ''
@@ -617,27 +611,22 @@
         let tradeModalSourceSpider = null;
 
         function loadConfig() {
-            // First check if auto-config is set
-            if (AUTO_CONFIG.githubToken && AUTO_CONFIG.gistId) {
-                config.githubToken = AUTO_CONFIG.githubToken;
-                config.gistId = AUTO_CONFIG.gistId;
+            // Load saved config from browser
+            const saved = localStorage.getItem('spiderLeagueConfig');
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById('githubToken').value = config.githubToken;
+                document.getElementById('gistId').value = config.gistId;
                 
-                // Save to localStorage as backup
-                localStorage.setItem('spiderLeagueConfig', JSON.stringify(config));
-                
-                // Auto-load spiders on page load
-                loadSpiders();
-            } else {
-                // Fall back to saved config
-                const saved = localStorage.getItem('spiderLeagueConfig');
-                if (saved) {
-                    config = JSON.parse(saved);
+                // Auto-load data if configured
+                if (config.githubToken && config.gistId) {
+                    loadSpiders();
+                    updateConfigStatus();
                 }
+            } else {
+                // First time - show settings
+                document.getElementById('configSection').classList.remove('hidden');
             }
-            
-            // Always show current config in settings
-            document.getElementById('githubToken').value = config.githubToken;
-            document.getElementById('gistId').value = config.gistId;
             
             // Check if user is logged in
             const savedUser = localStorage.getItem('spiderLeagueUser');
@@ -646,6 +635,39 @@
                 currentUser = savedUser;
                 currentUserPassword = savedPassword;
                 showUserInfo();
+            }
+        }
+
+        function saveConfig() {
+            config.githubToken = document.getElementById('githubToken').value.trim();
+            config.gistId = document.getElementById('gistId').value.trim();
+            
+            if (!config.githubToken) {
+                showStatus('configStatus', 'Please enter a GitHub token!', 'error');
+                return;
+            }
+            
+            localStorage.setItem('spiderLeagueConfig', JSON.stringify(config));
+            showStatus('configStatus', 'Configuration saved! ✓', 'success');
+            updateConfigStatus();
+            
+            // Try to load data if Gist ID is set
+            if (config.gistId) {
+                loadSpiders();
+            }
+        }
+
+        function updateConfigStatus() {
+            const statusEl = document.getElementById('configStatus2');
+            if (config.githubToken && config.gistId) {
+                statusEl.textContent = '✓ Connected';
+                statusEl.style.color = '#4ecdc4';
+            } else if (config.githubToken) {
+                statusEl.textContent = '⚠ Token set - add first spider to generate Gist ID';
+                statusEl.style.color = '#ffa500';
+            } else {
+                statusEl.textContent = '⚠ Not configured - click Settings';
+                statusEl.style.color = '#ffa500';
             }
         }
 
@@ -798,20 +820,6 @@
         function toggleConfig() {
             const section = document.getElementById('configSection');
             section.classList.toggle('hidden');
-        }
-
-        function updateAutoConfigStatus() {
-            const statusEl = document.getElementById('autoConfigStatus');
-            if (AUTO_CONFIG.githubToken && AUTO_CONFIG.gistId) {
-                statusEl.textContent = '✓ Auto-configured';
-                statusEl.style.color = '#4ecdc4';
-            } else if (config.githubToken && config.gistId) {
-                statusEl.textContent = '✓ Configured';
-                statusEl.style.color = '#4ecdc4';
-            } else {
-                statusEl.textContent = '⚠ Not configured';
-                statusEl.style.color = '#ffa500';
-            }
         }
 
         function switchTab(tab) {
