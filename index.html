@@ -389,14 +389,20 @@
 
         <div class="config-section">
             <h2>👤 Login / Register</h2>
+            <div style="background: rgba(255, 165, 0, 0.2); border: 2px solid rgba(255, 165, 0, 0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <strong style="color: #ffa500;">⚠️ Security Warning:</strong>
+                <p style="color: #ffcc00; margin-top: 8px; font-size: 0.95em;">
+                    Passwords are stored in plain text in a shared GitHub Gist. <strong>DO NOT use a password you use anywhere else!</strong> This is a casual game - use a simple, unique password.
+                </p>
+            </div>
             <div id="loginForm">
                 <div class="input-group">
                     <label>Username:</label>
                     <input type="text" id="username" placeholder="Enter username">
                 </div>
                 <div class="input-group">
-                    <label>Password:</label>
-                    <input type="password" id="password" placeholder="Enter password">
+                    <label>Password (use a unique password!):</label>
+                    <input type="password" id="password" placeholder="Enter a simple, unique password">
                 </div>
                 <button onclick="login()">Login</button>
                 <button onclick="register()">Register</button>
@@ -737,9 +743,27 @@
                 showStatus('loginStatus', 'Username must be 3+ characters', 'error');
                 return;
             }
+            
+            if (password.length < 4) {
+                showStatus('loginStatus', 'Password must be 4+ characters', 'error');
+                return;
+            }
 
             if (users.find(u => u.username === username)) {
                 showStatus('loginStatus', 'Username already taken!', 'error');
+                return;
+            }
+            
+            // Additional warning before registration
+            const confirmed = confirm(
+                '⚠️ SECURITY WARNING ⚠️\n\n' +
+                'Your password will be stored in PLAIN TEXT in a GitHub Gist.\n\n' +
+                'DO NOT use a password you use for any other account!\n\n' +
+                'Only use a simple, unique password for this game.\n\n' +
+                'Click OK to confirm you understand and want to register.'
+            );
+            
+            if (!confirmed) {
                 return;
             }
 
