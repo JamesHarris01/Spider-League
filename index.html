@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spider League</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -18,54 +14,60 @@
             min-height: 100vh;
             padding: 20px;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
         header {
             text-align: center;
             margin-bottom: 40px;
             padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
-            backdrop-filter: blur(10px);
         }
-
-        h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        
+        h1 { font-size: 3em; margin-bottom: 10px; }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
         }
-
-        .spider-emoji {
-            font-size: 1.5em;
+        
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
         }
-
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
         .config-section {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 30px;
         }
-
-        .config-section h2 {
-            margin-bottom: 15px;
-            color: #4ecdc4;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #aaa;
-        }
-
-        input, textarea, select {
+        
+        .config-section h2 { margin-bottom: 15px; color: #4ecdc4; }
+        
+        .input-group { margin-bottom: 15px; }
+        
+        label { display: block; margin-bottom: 5px; color: #aaa; }
+        
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             border: none;
@@ -74,11 +76,7 @@
             color: #fff;
             font-size: 14px;
         }
-
-        input::placeholder, textarea::placeholder {
-            color: #666;
-        }
-
+        
         button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -88,41 +86,28 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
             margin-right: 10px;
             margin-bottom: 10px;
         }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
+        
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         .spider-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
-            margin-top: 30px;
+            margin-top: 20px;
         }
-
+        
         .spider-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 20px;
-            backdrop-filter: blur(10px);
             border: 2px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
         }
-
-        .spider-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
+        
         .spider-image {
             width: 100%;
             height: 200px;
@@ -131,17 +116,13 @@
             margin-bottom: 15px;
             background: rgba(0, 0, 0, 0.3);
         }
-
+        
         .spider-name {
             font-size: 1.5em;
             margin-bottom: 10px;
             color: #4ecdc4;
         }
-
-        .spider-stats {
-            margin: 15px 0;
-        }
-
+        
         .stat {
             display: flex;
             justify-content: space-between;
@@ -150,739 +131,673 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 5px;
         }
-
-        .stat-label {
-            color: #aaa;
-        }
-
-        .stat-value {
+        
+        .user-coins {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 20px;
             font-weight: bold;
-            color: #4ecdc4;
+            display: inline-block;
         }
-
-        .spider-owner {
-            margin-top: 10px;
-            padding: 8px;
-            background: rgba(102, 126, 234, 0.3);
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .spider-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .spider-actions button {
-            flex: 1;
-            padding: 8px;
-            font-size: 14px;
-            margin: 0;
-        }
-
-        .delete-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .trade-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
+        
+        .hidden { display: none; }
+        
         .status {
             padding: 10px;
             border-radius: 5px;
             margin: 10px 0;
             text-align: center;
         }
-
+        
         .status.success {
             background: rgba(78, 205, 196, 0.2);
             border: 1px solid #4ecdc4;
         }
-
+        
         .status.error {
             background: rgba(245, 87, 108, 0.2);
             border: 1px solid #f5576c;
         }
 
-        .hidden {
-            display: none;
+        .hp-bar {
+            width: 100%;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
-        .leaderboard {
-            background: rgba(255, 255, 255, 0.1);
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a6a0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            transition: width 0.5s;
+        }
+
+        .hp-fill.low {
+            background: linear-gradient(90deg, #ff6b6b, #ee5a6f);
+        }
+
+        .battle-arena {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .battle-field {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .fighter {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(255, 255, 255, 0.05);
             padding: 20px;
             border-radius: 10px;
-            margin-bottom: 30px;
         }
 
-        .leaderboard h2 {
-            margin-bottom: 15px;
-            color: #4ecdc4;
-        }
-
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-        }
-
-        .rank {
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: center;
-        }
-
-        .stat-input-group input.stat-name {
-            flex: 2;
-        }
-
-        .stat-input-group input.stat-value {
-            flex: 1;
-        }
-
-        .remove-stat-btn {
-            background: rgba(245, 87, 108, 0.8);
-            padding: 8px 12px;
-            font-size: 18px;
-            min-width: 40px;
-            margin: 0;
-        }
-
-        .spider-latin {
-            font-style: italic;
-            color: #aaa;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-        }
-
-        #imagePreview {
-            max-width: 100%;
-        }
-
-        #imagePreview img {
-            max-width: 200px;
-            max-height: 200px;
+        .fighter-image {
+            width: 150px;
+            height: 150px;
             border-radius: 10px;
-            margin-top: 10px;
-        }
-
-        input[type="file"] {
-            padding: 8px;
-            cursor: pointer;
-        }
-
-        .config-toggle {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .config-toggle button {
-            background: rgba(255, 255, 255, 0.1);
-            font-size: 14px;
-            padding: 8px 20px;
-        }
-
-        .trade-request {
-            background: rgba(255, 165, 0, 0.2);
-            border: 2px solid rgba(255, 165, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-
-        .trade-request-header {
-            font-weight: bold;
-            color: #ffa500;
-            margin-bottom: 10px;
-        }
-
-        .trade-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            margin: 10px 0;
-        }
-
-        .trade-spider {
-            flex: 1;
-            text-align: center;
-        }
-
-        .trade-arrow {
-            font-size: 2em;
-            color: #ffa500;
-        }
-
-        .trade-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .accept-btn {
-            background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);
-            flex: 1;
-        }
-
-        .reject-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            flex: 1;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            margin: 5% auto;
-            padding: 30px;
-            border: 2px solid rgba(78, 205, 196, 0.5);
-            border-radius: 15px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .close-modal {
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #aaa;
-        }
-
-        .close-modal:hover {
-            color: #fff;
-        }
-
-        .spider-select {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .spider-select:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(78, 205, 196, 0.5);
-        }
-
-        .spider-select.selected {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.2);
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid transparent;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .tab-btn.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: #4ecdc4;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
+            margin: 0 auto 15px;
+            object-fit: cover;
             display: block;
         }
 
-        .badge {
-            display: inline-block;
-            background: rgba(255, 165, 0, 0.8);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
+        .battle-log {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 2px solid rgba(78, 205, 196, 0.3);
+        }
+
+        .battle-log-entry {
+            padding: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #4ecdc4;
+            padding-left: 10px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .battle-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .action-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .action-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+        }
+
+        .move-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .move-btn {
+            background: rgba(102, 126, 234, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid rgba(102, 126, 234, 1);
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .move-btn:hover:not(:disabled) {
+            background: rgba(102, 126, 234, 1);
+            transform: scale(1.05);
+        }
+
+        .move-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .move-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .move-type {
+            font-size: 11px;
+            color: #ffa500;
+            text-transform: uppercase;
+        }
+
+        .move-power {
             font-size: 12px;
-            margin-left: 10px;
+            color: #aaa;
+        }
+
+        .item-btn {
+            background: rgba(255, 165, 0, 0.8);
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid rgba(255, 165, 0, 1);
+            width: 100%;
+            text-align: left;
+        }
+
+        .item-btn:hover:not(:disabled) {
+            background: rgba(255, 165, 0, 1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 20px;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);
+        }
+
+        .owner-history {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .move-list {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        .inventory-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            margin: 3px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><span class="spider-emoji">🕷️</span> Spider League <span class="spider-emoji">🕷️</span></h1>
-            <p>Catch, Trade, and Rank Your Spider Collection!</p>
+            <h1>🕷️ Spider League 🕷️</h1>
+            <p>Pokemon-Style Spider Battles!</p>
         </header>
 
-        <div class="config-toggle">
+        <div style="text-align: center; margin-bottom: 20px;">
             <button onclick="toggleConfig()">⚙️ Settings</button>
-            <span id="autoConfigStatus" style="margin-left: 15px; color: #4ecdc4;"></span>
+            <span class="user-coins" id="userCoins">💰 0 coins</span>
         </div>
 
         <div id="configSection" class="config-section hidden">
             <h2>⚙️ GitHub Configuration</h2>
             <div class="input-group">
-                <label for="githubToken">GitHub Personal Access Token:</label>
+                <label>GitHub Token:</label>
                 <input type="password" id="githubToken" placeholder="ghp_...">
             </div>
             <div class="input-group">
-                <label for="gistId">Gist ID:</label>
-                <input type="text" id="gistId" placeholder="Auto-generated after first spider">
+                <label>Gist ID:</label>
+                <input type="text" id="gistId" placeholder="Leave empty for first time">
             </div>
             <button onclick="saveConfig()">Save Configuration</button>
-            <button onclick="loadSpiders()">Load Spiders</button>
+            <button onclick="loadData()">Refresh Data</button>
             <div id="configStatus"></div>
         </div>
 
         <div class="config-section">
-            <h2>👤 Your Identity</h2>
+            <h2>👤 Login / Register</h2>
             <div id="loginForm">
                 <div class="input-group">
-                    <label for="loginUsername">Username:</label>
-                    <input type="text" id="loginUsername" placeholder="Enter your username">
+                    <label>Username:</label>
+                    <input type="text" id="username" placeholder="Enter username">
                 </div>
                 <div class="input-group">
-                    <label for="loginPassword">Password:</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                    <label>Password:</label>
+                    <input type="password" id="password" placeholder="Enter password">
                 </div>
                 <button onclick="login()">Login</button>
-                <button onclick="register()" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">Register New User</button>
+                <button onclick="register()">Register</button>
                 <div id="loginStatus"></div>
             </div>
             <div id="userInfo" class="hidden">
-                <p style="color: #4ecdc4; font-size: 1.2em; margin-bottom: 10px;">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">
                     Logged in as: <strong id="displayUsername"></strong>
                 </p>
-                <button onclick="logout()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Logout</button>
+                <button onclick="logout()">Logout</button>
             </div>
         </div>
 
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('add')">➕ Add Spider</button>
-            <button class="tab-btn" onclick="switchTab('trades')" id="tradesTabBtn">🔄 Trade Requests</button>
-            <button class="tab-btn" onclick="switchTab('collection')">🕸️ Collection</button>
+            <button class="tab-btn active" onclick="switchTab('collection')">🕸️ Collection</button>
+            <button class="tab-btn" onclick="switchTab('add')">➕ Add Spider</button>
+            <button class="tab-btn" onclick="switchTab('battle')">⚔️ Battle</button>
+            <button class="tab-btn" onclick="switchTab('shop')">🛒 Shop & Inventory</button>
+            <button class="tab-btn hidden" onclick="switchTab('admin')" id="adminTab">👑 Admin</button>
         </div>
 
-        <div id="addTab" class="tab-content active">
+        <!-- Collection Tab -->
+        <div id="collectionTab" class="tab-content active">
+            <div class="config-section">
+                <h2>🕸️ Spider Collection</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="setFilter('all')">All Spiders</button>
+                    <button class="filter-btn" onclick="setFilter('mine')">My Spiders</button>
+                </div>
+                <div class="spider-grid" id="spiderGrid">
+                    <p style="color: #666;">Loading spiders...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Spider Tab -->
+        <div id="addTab" class="tab-content">
             <div class="config-section">
                 <h2>➕ Add New Spider</h2>
                 <div class="input-group">
-                    <label for="spiderName">Spider Name:</label>
-                    <input type="text" id="spiderName" placeholder="e.g., Sir Websworth III">
+                    <label>Spider Name:</label>
+                    <input type="text" id="spiderName" placeholder="e.g., Sir Websworth">
                 </div>
                 <div class="input-group">
-                    <label for="spiderLatinName">Latin Name:</label>
-                    <input type="text" id="spiderLatinName" placeholder="e.g., Araneus magnificus">
+                    <label>Image URL:</label>
+                    <input type="text" id="spiderImage" placeholder="Image URL">
                 </div>
                 <div class="input-group">
-                    <label for="spiderImage">Image:</label>
-                    <input type="file" id="spiderImageFile" accept="image/*" onchange="handleImageUpload(this)">
-                    <p style="color: #aaa; font-size: 12px; margin-top: 5px;">Or enter URL:</p>
-                    <input type="text" id="spiderImage" placeholder="Enter image URL (optional if file uploaded)">
+                    <label>Strength (1-100):</label>
+                    <input type="number" id="strength" min="1" max="100" value="50">
                 </div>
-                <div id="imagePreview"></div>
                 <div class="input-group">
-                    <label for="spiderRarity">Rarity:</label>
-                    <select id="spiderRarity">
-                        <option value="Common">Common</option>
-                        <option value="Uncommon">Uncommon</option>
-                        <option value="Rare">Rare</option>
-                        <option value="Epic">Epic</option>
-                        <option value="Legendary">Legendary</option>
-                    </select>
+                    <label>Speed (1-100):</label>
+                    <input type="number" id="speed" min="1" max="100" value="50">
                 </div>
-                
-                <h3 style="margin: 20px 0 10px 0; color: #4ecdc4;">Spider Stats</h3>
-                <div id="statsContainer">
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Strength">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Speed">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Web Quality">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                </div>
-                <button onclick="addStatInput()" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">+ Add Another Stat</button>
-                <button onclick="addSpider()">Add Spider to Collection</button>
+                <button onclick="addSpider()">Submit Spider for Approval</button>
                 <div id="addStatus"></div>
             </div>
         </div>
 
-        <div id="tradesTab" class="tab-content">
+        <!-- Battle Tab -->
+        <div id="battleTab" class="tab-content">
             <div class="config-section">
-                <h2>🔄 Trade Requests</h2>
-                <div id="tradeRequestsList">
-                    <p style="color: #666;">No pending trade requests</p>
+                <h2>⚔️ Battle Arena</h2>
+                <div id="battleSelectPhase">
+                    <p style="color: #aaa; margin-bottom: 15px;">Select your spider to challenge an opponent:</p>
+                    <div class="spider-grid" id="battleSelectSpiders"></div>
                 </div>
+                <div id="battleOpponentPhase" class="hidden">
+                    <button onclick="backToBattleSelect()">← Back</button>
+                    <p style="color: #aaa; margin: 15px 0;">Choose your opponent:</p>
+                    <div class="spider-grid" id="battleOpponents"></div>
+                </div>
+                <div id="battleArenaPhase" class="hidden"></div>
             </div>
         </div>
 
-        <div id="collectionTab" class="tab-content">
-            <div class="leaderboard">
-                <h2>🏆 Leaderboard</h2>
-                <div id="leaderboardList">
-                    <p style="color: #666;">Load spiders to see rankings...</p>
+        <!-- Shop & Inventory Tab -->
+        <div id="shopTab" class="tab-content">
+            <div class="config-section">
+                <h2>🎒 Your Inventory</h2>
+                <div id="inventoryDisplay" class="inventory-display">
+                    <p style="color: #666;">Your items will appear here</p>
                 </div>
             </div>
-
-            <div>
-                <h2 style="margin-bottom: 20px;">🕸️ Spider Collection</h2>
-                <div class="spider-grid" id="spiderGrid">
-                    <p style="color: #666;">No spiders yet. Add some to get started!</p>
+            <div class="config-section">
+                <h2>🛒 Shop</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 3em;">⚡</div>
+                        <h3>Potion</h3>
+                        <p style="color: #aaa;">Restore 20 HP in battle</p>
+                        <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="pricePotion">15</span> coins</div>
+                        <button onclick="buyShopItem('potion')">Buy</button>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 3em;">💊</div>
+                        <h3>Super Potion</h3>
+                        <p style="color: #aaa;">Restore 50 HP in battle</p>
+                        <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="priceSuperPotion">30</span> coins</div>
+                        <button onclick="buyShopItem('superPotion')">Buy</button>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 3em;">✨</div>
+                        <h3>Full Restore</h3>
+                        <p style="color: #aaa;">Restore all HP in battle</p>
+                        <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="priceFullRestore">50</span> coins</div>
+                        <button onclick="buyShopItem('fullRestore')">Buy</button>
+                    </div>
                 </div>
+                <div id="shopStatus"></div>
             </div>
         </div>
-    </div>
 
-    <!-- Trade Modal -->
-    <div id="tradeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 style="color: #4ecdc4;">🔄 Propose Trade</h2>
-                <span class="close-modal" onclick="closeTradeModal()">&times;</span>
+        <!-- Admin Tab -->
+        <div id="adminTabContent" class="tab-content">
+            <div class="config-section">
+                <h2>👑 Admin Panel</h2>
+                
+                <div id="adminAccessDenied">
+                    <p style="color: #f5576c;">⛔ Access Denied - Admin login required</p>
+                </div>
+
+                <div id="adminContent" class="hidden">
+                    <h3 style="color: #4ecdc4;">🔍 Spider Verification Queue</h3>
+                    <div id="verificationQueue" style="margin-bottom: 30px;"></div>
+
+                    <h3 style="color: #4ecdc4;">⚔️ Move List Editor</h3>
+                    <p style="color: #aaa; margin-bottom: 10px;">Edit the list of moves available in the game (JSON format):</p>
+                    <textarea id="adminMoves" rows="10" style="font-family: monospace; font-size: 12px;"></textarea>
+                    <button onclick="saveMoveList()">Save Move List</button>
+
+                    <h3 style="color: #4ecdc4; margin-top: 30px;">🛒 Shop Prices</h3>
+                    <div class="input-group">
+                        <label>Potion Price:</label>
+                        <input type="number" id="adminPricePotion" min="0" value="15">
+                    </div>
+                    <div class="input-group">
+                        <label>Super Potion Price:</label>
+                        <input type="number" id="adminPriceSuperPotion" min="0" value="30">
+                    </div>
+                    <div class="input-group">
+                        <label>Full Restore Price:</label>
+                        <input type="number" id="adminPriceFullRestore" min="0" value="50">
+                    </div>
+                    <button onclick="saveShopPrices()">Save Shop Prices</button>
+
+                    <h3 style="color: #4ecdc4; margin-top: 30px;">👥 User Management</h3>
+                    <div id="usersList" style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;"></div>
+                    
+                    <div id="adminStatus"></div>
+                </div>
             </div>
-            
-            <h3 style="margin-bottom: 15px;">You're offering:</h3>
-            <div id="yourSpiderInfo" style="margin-bottom: 20px;"></div>
-            
-            <h3 style="margin-bottom: 15px;">Select spider you want in return:</h3>
-            <div id="otherSpidersList"></div>
-            
-            <button onclick="submitTradeRequest()" style="width: 100%; margin-top: 20px;">Send Trade Request</button>
         </div>
     </div>
 
     <script>
-        let config = {
-            githubToken: '',
-            gistId: ''
-        };
+        // ===== MOVE LIST (EDITABLE BY ADMIN) =====
+        let MOVE_LIST = [
+            // Damage moves
+            { name: "Bite", type: "physical", basePower: 50, effect: null },
+            { name: "Venom Fang", type: "physical", basePower: 60, effect: null },
+            { name: "Quick Strike", type: "speed", basePower: 35, effect: null },
+            
+            // Status moves with poison
+            { name: "Poison Sting", type: "physical", basePower: 30, effect: { type: "poison", chance: 0.5, damage: 8 } },
+            { name: "Toxic Bite", type: "physical", basePower: 40, effect: { type: "poison", chance: 0.8, damage: 12 } },
+            
+            // Draining/healing moves
+            { name: "Leech Life", type: "physical", basePower: 40, effect: { type: "drain", percent: 0.5 } },
+            { name: "Spider Drain", type: "web", basePower: 50, effect: { type: "drain", percent: 0.6 } },
+            
+            // Multi-hit moves
+            { name: "Web Barrage", type: "web", basePower: 25, effect: { type: "multihit", hits: 3 } },
+            { name: "Fury Swipes", type: "physical", basePower: 18, effect: { type: "multihit", hits: 4 } },
+            
+            // Stat boosting moves
+            { name: "Agility", type: "speed", basePower: 0, effect: { type: "boost", stat: "speed", amount: 15 } },
+            { name: "Harden", type: "physical", basePower: 0, effect: { type: "boost", stat: "defense", amount: 12 } },
+            { name: "Focus Energy", type: "speed", basePower: 0, effect: { type: "boost", stat: "strength", amount: 10 } },
+            
+            // Web/trap moves
+            { name: "Silk Trap", type: "web", basePower: 20, effect: { type: "trap", damage: 10, turns: 2 } },
+            { name: "Sticky Web", type: "web", basePower: 0, effect: { type: "slow", amount: 10, turns: 3 } },
+            { name: "Web Shot", type: "web", basePower: 40, effect: { type: "slow", amount: 5, turns: 2 } },
+            
+            // Recoil moves (high risk, high reward)
+            { name: "Reckless Charge", type: "physical", basePower: 90, effect: { type: "recoil", percent: 0.25 } },
+            { name: "Wild Tackle", type: "physical", basePower: 70, effect: { type: "recoil", percent: 0.2 } },
+            
+            // Accuracy/evasion moves
+            { name: "Sand Attack", type: "speed", basePower: 0, effect: { type: "accuracy_down", amount: 15, turns: 2 } },
+            
+            // Guaranteed crit moves
+            { name: "Assassination", type: "speed", basePower: 55, effect: { type: "guaranteed_crit" } },
+            
+            // Charge moves (wait 1 turn, big damage)
+            { name: "Solar Beam", type: "web", basePower: 120, effect: { type: "charge", turns: 1 } }
+        ];
+
+        // ===== GAME STATE =====
+        let config = { githubToken: '', gistId: '' };
         let spiders = [];
-        let tradeRequests = [];
         let users = [];
-        let currentImageData = null;
+        let shopPrices = { potion: 15, superPotion: 30, fullRestore: 50 };
         let currentUser = '';
-        let currentUserPassword = '';
-        let selectedSpiderForTrade = null;
-        let tradeModalSourceSpider = null;
-        let autoRefreshInterval = null;
+        let currentFilter = 'all';
+        let battleState = null;
+        let selectedBattleSpider = null;
 
-        function loadConfig() {
-            // Load saved config from browser
-            const saved = localStorage.getItem('spiderLeagueConfig');
-            if (saved) {
-                config = JSON.parse(saved);
-                document.getElementById('githubToken').value = config.githubToken;
-                document.getElementById('gistId').value = config.gistId;
-                
-                // Auto-load data if configured
-                if (config.githubToken && config.gistId) {
-                    loadSpiders();
-                    updateConfigStatus();
-                }
-            } else {
-                // First time - show settings
-                document.getElementById('configSection').classList.remove('hidden');
-            }
+        // Battle status effects
+        function initBattleEffects() {
+            return {
+                poison: { active: false, damage: 0 },
+                trapped: { active: false, damage: 0, turns: 0 },
+                speedMod: 0,
+                strengthMod: 0,
+                defenseMod: 0,
+                accuracyMod: 0,
+                charging: { active: false, move: null }
+            };
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        function toggleConfig() {
+            document.getElementById('configSection').classList.toggle('hidden');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
             
-            // Check if user is logged in
-            const savedUser = localStorage.getItem('spiderLeagueUser');
-            const savedPassword = localStorage.getItem('spiderLeaguePassword');
-            if (savedUser && savedPassword) {
-                currentUser = savedUser;
-                currentUserPassword = savedPassword;
-                showUserInfo();
+            if (tab === 'collection') {
+                document.getElementById('collectionTab').classList.add('active');
+            } else if (tab === 'add') {
+                document.getElementById('addTab').classList.add('active');
+            } else if (tab === 'battle') {
+                document.getElementById('battleTab').classList.add('active');
+                renderBattleSelect();
+            } else if (tab === 'shop') {
+                document.getElementById('shopTab').classList.add('active');
+                updateShopPrices();
+                renderInventory();
+            } else if (tab === 'admin') {
+                document.getElementById('adminTabContent').classList.add('active');
+                checkAdminAccess();
             }
         }
 
-        function saveConfig() {
-            config.githubToken = document.getElementById('githubToken').value.trim();
-            config.gistId = document.getElementById('gistId').value.trim();
-            
-            if (!config.githubToken) {
-                showStatus('configStatus', 'Please enter a GitHub token!', 'error');
-                return;
-            }
-            
-            localStorage.setItem('spiderLeagueConfig', JSON.stringify(config));
-            showStatus('configStatus', 'Configuration saved! ✓', 'success');
-            updateConfigStatus();
-            
-            // Try to load data if Gist ID is set
-            if (config.gistId) {
-                loadSpiders();
-            }
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderSpiders();
         }
 
-        function updateConfigStatus() {
-            const statusEl = document.getElementById('configStatus2');
-            if (config.githubToken && config.gistId) {
-                statusEl.textContent = '✓ Connected';
-                statusEl.style.color = '#4ecdc4';
-            } else if (config.githubToken) {
-                statusEl.textContent = '⚠ Token set - add first spider to generate Gist ID';
-                statusEl.style.color = '#ffa500';
-            } else {
-                statusEl.textContent = '⚠ Not configured - click Settings';
-                statusEl.style.color = '#ffa500';
-            }
+        function showStatus(id, msg, type) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.className = `status ${type}`;
+            setTimeout(() => el.className = 'status hidden', 3000);
         }
 
         function showUserInfo() {
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('displayUsername').textContent = currentUser;
+            if (currentUser === 'admin') {
+                document.getElementById('adminTab').classList.remove('hidden');
+            }
+            updateCoins();
         }
 
-        function showLoginForm() {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('userInfo').classList.add('hidden');
+        function updateCoins() {
+            const user = users.find(u => u.username === currentUser);
+            const coins = user ? user.coins || 0 : 0;
+            document.getElementById('userCoins').textContent = `💰 ${coins} coins`;
         }
 
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        function getUserInventory() {
+            const user = users.find(u => u.username === currentUser);
+            return user ? user.inventory || {} : {};
+        }
+
+        function setUserInventory(inventory) {
+            const user = users.find(u => u.username === currentUser);
+            if (user) user.inventory = inventory;
+        }
+
+        // ===== MOVE GENERATION =====
+        function generateMoves(spider) {
+            const shuffled = [...MOVE_LIST].sort(() => Math.random() - 0.5);
+            const moves = shuffled.slice(0, 4).map(move => ({
+                ...move,
+                power: move.basePower + Math.floor(spider.level * 2)
+            }));
+            return moves;
+        }
+
+        // ===== CONFIG & AUTH =====
+        function loadConfig() {
+            const saved = window.localStorage.getItem('spiderConfig');
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById('githubToken').value = config.githubToken || '';
+                document.getElementById('gistId').value = config.gistId || '';
+            }
+
+            const savedUser = window.localStorage.getItem('spiderUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                showUserInfo();
+            }
+
+            loadData();
+        }
+
+        function saveConfig() {
+            config.githubToken = document.getElementById('githubToken').value.trim();
+            config.gistId = document.getElementById('gistId').value.trim();
+            window.localStorage.setItem('spiderConfig', JSON.stringify(config));
+            showStatus('configStatus', 'Configuration saved!', 'success');
+            if (config.gistId) loadData();
         }
 
         async function register() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
 
             if (!username || !password) {
-                showStatus('loginStatus', 'Please enter both username and password!', 'error');
+                showStatus('loginStatus', 'Enter username and password!', 'error');
                 return;
             }
 
             if (username.length < 3) {
-                showStatus('loginStatus', 'Username must be at least 3 characters!', 'error');
+                showStatus('loginStatus', 'Username must be 3+ characters', 'error');
                 return;
             }
 
-            if (password.length < 4) {
-                showStatus('loginStatus', 'Password must be at least 4 characters!', 'error');
+            if (users.find(u => u.username === username)) {
+                showStatus('loginStatus', 'Username already taken!', 'error');
                 return;
             }
 
-            // Load existing users
-            await loadSpiders();
-
-            // Check if username exists
-            const existingUser = users.find(u => u.username === username);
-            if (existingUser) {
-                showStatus('loginStatus', 'Username already taken! Please choose another.', 'error');
-                return;
-            }
-
-            // Hash password
-            const hashedPassword = await hashPassword(password);
-
-            // Create new user
-            const newUser = {
-                username: username,
-                passwordHash: hashedPassword,
+            users.push({
+                username,
+                password,
+                coins: 100,
+                inventory: {},
                 createdAt: new Date().toISOString()
-            };
+            });
 
-            users.push(newUser);
-
-            if (await saveSpiders()) {
+            if (await saveData()) {
                 currentUser = username;
-                currentUserPassword = password;
-                localStorage.setItem('spiderLeagueUser', username);
-                localStorage.setItem('spiderLeaguePassword', password);
-                
+                window.localStorage.setItem('spiderUser', username);
                 showUserInfo();
-                showStatus('loginStatus', 'Registration successful! You are now logged in.', 'success');
-                
-                // Clear input fields
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
+                showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
             }
         }
 
         async function login() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
 
             if (!username || !password) {
-                showStatus('loginStatus', 'Please enter both username and password!', 'error');
+                showStatus('loginStatus', 'Enter username and password!', 'error');
                 return;
             }
 
-            // Load existing users
-            await loadSpiders();
+            const user = users.find(u => u.username === username && u.password === password);
 
-            // Find user
-            const user = users.find(u => u.username === username);
-            if (!user) {
-                showStatus('loginStatus', 'Username not found! Please register first.', 'error');
-                return;
+            if (user) {
+                currentUser = username;
+                window.localStorage.setItem('spiderUser', username);
+                showUserInfo();
+                showStatus('loginStatus', 'Logged in successfully!', 'success');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                renderSpiders();
+            } else {
+                showStatus('loginStatus', 'Invalid username or password!', 'error');
             }
-
-            // Verify password
-            const hashedPassword = await hashPassword(password);
-            if (hashedPassword !== user.passwordHash) {
-                showStatus('loginStatus', 'Incorrect password!', 'error');
-                return;
-            }
-
-            // Login successful
-            currentUser = username;
-            currentUserPassword = password;
-            localStorage.setItem('spiderLeagueUser', username);
-            localStorage.setItem('spiderLeaguePassword', password);
-            
-            showUserInfo();
-            showStatus('loginStatus', 'Login successful!', 'success');
-            
-            // Clear input fields
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            
-            // Refresh displays
-            renderSpiders();
-            renderLeaderboard();
-            renderTradeRequests();
-            updateTradesBadge();
         }
 
         function logout() {
-            if (!confirm('Are you sure you want to logout?')) return;
-            
+            if (!confirm('Logout?')) return;
             currentUser = '';
-            currentUserPassword = '';
-            localStorage.removeItem('spiderLeagueUser');
-            localStorage.removeItem('spiderLeaguePassword');
-            
-            showLoginForm();
-            
-            // Clear displays
-            document.getElementById('spiderGrid').innerHTML = '<p style="color: #666;">Please login to view spiders</p>';
-            document.getElementById('leaderboardList').innerHTML = '<p style="color: #666;">Please login to view leaderboard</p>';
-            document.getElementById('tradeRequestsList').innerHTML = '<p style="color: #666;">Please login to view trades</p>';
+            window.localStorage.removeItem('spiderUser');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('adminTab').classList.add('hidden');
+            renderSpiders();
         }
 
-        function saveUsername() {
-            // This function is now deprecated - keeping for backwards compatibility
-            currentUser = document.getElementById('currentUser').value.trim();
-            if (currentUser) {
-                localStorage.setItem('spiderLeagueUser', currentUser);
-                showStatus('addStatus', 'Username saved!', 'success');
-            }
-        }
-
-        function toggleConfig() {
-            const section = document.getElementById('configSection');
-            section.classList.toggle('hidden');
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            if (tab === 'add') {
-                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-                document.getElementById('addTab').classList.add('active');
-            } else if (tab === 'trades') {
-                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-                document.getElementById('tradesTab').classList.add('active');
-            } else if (tab === 'collection') {
-                document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
-                document.getElementById('collectionTab').classList.add('active');
-            }
-        }
-
-        function saveConfig() {
-            config.githubToken = document.getElementById('githubToken').value;
-            config.gistId = document.getElementById('gistId').value;
-            localStorage.setItem('spiderLeagueConfig', JSON.stringify(config));
-            showStatus('configStatus', 'Configuration saved!', 'success');
-        }
-
-        function showStatus(elementId, message, type) {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.className = `status ${type}`;
-            setTimeout(() => el.className = 'status hidden', 5000);
-        }
-
-        function handleImageUpload(input) {
-            const file = input.files[0];
-            if (!file) {
-                currentImageData = null;
-                document.getElementById('imagePreview').innerHTML = '';
-                return;
-            }
-
-            if (file.size > 1024 * 1024) {
-                showStatus('addStatus', 'Image too large! Please use an image under 1MB.', 'error');
-                input.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentImageData = e.target.result;
-                document.getElementById('imagePreview').innerHTML = `
-                    <img src="${currentImageData}" alt="Preview">
-                `;
-                document.getElementById('spiderImage').value = '';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function loadSpiders() {
-            if (!config.githubToken || !config.gistId) {
-                showStatus('configStatus', 'Please configure GitHub token and Gist ID first!', 'error');
-                return;
-            }
+        // ===== DATA PERSISTENCE =====
+        async function loadData() {
+            if (!config.githubToken || !config.gistId) return;
 
             try {
                 const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
@@ -892,36 +807,32 @@
                     }
                 });
 
-                if (!response.ok) throw new Error(`Failed to load (${response.status})`);
+                if (!response.ok) return;
 
                 const data = await response.json();
-                const content = data.files['spider-league.json'].content;
-                const parsed = JSON.parse(content);
-                spiders = parsed.spiders || [];
-                tradeRequests = parsed.tradeRequests || [];
-                users = parsed.users || [];
+                const content = JSON.parse(data.files['spider-league.json'].content);
+                
+                spiders = content.spiders || [];
+                users = content.users || [];
+                shopPrices = content.shopPrices || shopPrices;
+                MOVE_LIST = content.moveList || MOVE_LIST;
+                
                 renderSpiders();
-                renderLeaderboard();
-                renderTradeRequests();
-                updateTradesBadge();
-                showStatus('configStatus', 'Data loaded successfully!', 'success');
+                updateCoins();
+                updateShopPrices();
+                renderInventory();
             } catch (error) {
-                showStatus('configStatus', 'Error loading: ' + error.message, 'error');
+                console.error('Load error:', error);
             }
         }
 
-        async function saveSpiders() {
+        async function saveData() {
             if (!config.githubToken) {
-                showStatus('addStatus', 'Please configure GitHub token first!', 'error');
-                return;
+                alert('Please configure GitHub token first!');
+                return false;
             }
 
-            const data = { 
-                spiders: spiders,
-                tradeRequests: tradeRequests,
-                users: users
-            };
-            const fileContent = JSON.stringify(data, null, 2);
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST };
 
             try {
                 if (!config.gistId) {
@@ -937,18 +848,19 @@
                             public: false,
                             files: {
                                 'spider-league.json': {
-                                    content: fileContent
+                                    content: JSON.stringify(data, null, 2)
                                 }
                             }
                         })
                     });
-                    
-                    if (!response.ok) throw new Error(`Failed to create (${response.status})`);
+
+                    if (!response.ok) return false;
 
                     const result = await response.json();
                     config.gistId = result.id;
                     document.getElementById('gistId').value = config.gistId;
-                    localStorage.setItem('spiderLeagueConfig', JSON.stringify(config));
+                    window.localStorage.setItem('spiderConfig', JSON.stringify(config));
+                    alert(`Gist created! ID: ${config.gistId}\n\nShare this with friends!`);
                 } else {
                     const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
                         method: 'PATCH',
@@ -960,440 +872,814 @@
                         body: JSON.stringify({
                             files: {
                                 'spider-league.json': {
-                                    content: fileContent
+                                    content: JSON.stringify(data, null, 2)
                                 }
                             }
                         })
                     });
 
-                    if (!response.ok) throw new Error(`Failed to update (${response.status})`);
+                    if (!response.ok) return false;
                 }
 
+                await loadData();
                 return true;
             } catch (error) {
-                showStatus('addStatus', 'Error saving: ' + error.message, 'error');
+                console.error('Save error:', error);
                 return false;
             }
         }
 
+        // ===== SPIDER MANAGEMENT =====
         async function addSpider() {
             if (!currentUser) {
                 showStatus('addStatus', 'Please login first!', 'error');
-                switchTab('collection');
                 return;
             }
 
-            const name = document.getElementById('spiderName').value;
-            const latinName = document.getElementById('spiderLatinName').value;
-            const imageUrl = document.getElementById('spiderImage').value;
-            const rarity = document.getElementById('spiderRarity').value;
+            const name = document.getElementById('spiderName').value.trim();
+            const image = document.getElementById('spiderImage').value.trim();
+            const strength = parseInt(document.getElementById('strength').value);
+            const speed = parseInt(document.getElementById('speed').value);
 
             if (!name) {
                 showStatus('addStatus', 'Please enter a spider name!', 'error');
                 return;
             }
 
-            let finalImage;
-            if (currentImageData) {
-                finalImage = currentImageData;
-            } else if (imageUrl) {
-                finalImage = imageUrl;
-            } else {
-                finalImage = 'https://via.placeholder.com/300x200?text=Spider';
-            }
-
-            const statInputs = document.querySelectorAll('.stat-input-group');
-            const stats = {};
-            let totalValue = 0;
-            let statCount = 0;
-
-            statInputs.forEach(group => {
-                const statName = group.querySelector('.stat-name').value.trim();
-                const statValue = parseInt(group.querySelector('.stat-value').value);
-                
-                if (statName) {
-                    stats[statName] = statValue;
-                    totalValue += statValue;
-                    statCount++;
-                }
-            });
-
-            const powerLevel = statCount > 0 ? Math.round(totalValue / statCount) : 0;
-
             const spider = {
                 id: Date.now(),
                 name,
-                latinName: latinName || '',
-                image: finalImage,
+                image: image || 'https://via.placeholder.com/300x200?text=Spider',
                 owner: currentUser,
-                stats,
-                rarity,
-                powerLevel
+                ownerHistory: [currentUser],
+                strength,
+                speed,
+                level: 1,
+                hp: 100,
+                maxHp: 100,
+                wins: 0,
+                losses: 0,
+                moves: null,
+                verified: false,
+                pending: true
             };
 
             spiders.push(spider);
 
-            if (await saveSpiders()) {
-                renderSpiders();
-                renderLeaderboard();
-                showStatus('addStatus', 'Spider added successfully!', 'success');
-                
+            if (await saveData()) {
+                showStatus('addStatus', 'Spider submitted for admin approval!', 'success');
                 document.getElementById('spiderName').value = '';
-                document.getElementById('spiderLatinName').value = '';
                 document.getElementById('spiderImage').value = '';
-                document.getElementById('spiderImageFile').value = '';
-                document.getElementById('imagePreview').innerHTML = '';
-                document.getElementById('spiderRarity').value = 'Common';
-                currentImageData = null;
-                
-                const container = document.getElementById('statsContainer');
-                container.innerHTML = `
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Strength">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Speed">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                    <div class="stat-input-group">
-                        <input type="text" class="stat-name" placeholder="Stat name" value="Web Quality">
-                        <input type="number" class="stat-value" min="1" max="100" value="50">
-                        <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-                    </div>
-                `;
+                document.getElementById('strength').value = 50;
+                document.getElementById('speed').value = 50;
             }
         }
 
-        function addStatInput() {
-            const container = document.getElementById('statsContainer');
-            const newStat = document.createElement('div');
-            newStat.className = 'stat-input-group';
-            newStat.innerHTML = `
-                <input type="text" class="stat-name" placeholder="Stat name (e.g., Venom)">
-                <input type="number" class="stat-value" min="1" max="100" value="50">
-                <button onclick="removeStatInput(this)" class="remove-stat-btn">✕</button>
-            `;
-            container.appendChild(newStat);
-        }
-
-        function removeStatInput(btn) {
-            const container = document.getElementById('statsContainer');
-            if (container.children.length > 1) {
-                btn.parentElement.remove();
-            } else {
-                showStatus('addStatus', 'You need at least one stat!', 'error');
-            }
-        }
-
-        function openTradeModal(spiderId) {
-            if (!currentUser) {
-                alert('Please set your name first!');
-                return;
-            }
-
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider) return;
-
-            if (spider.owner !== currentUser) {
-                alert('You can only trade spiders you own!');
-                return;
-            }
-
-            tradeModalSourceSpider = spider;
+        async function deleteSpider(id) {
+            if (!confirm('Delete this spider?')) return;
             
-            // Show your spider
-            document.getElementById('yourSpiderInfo').innerHTML = `
-                <div class="spider-select" style="border-color: #4ecdc4;">
-                    <strong>${spider.name}</strong> ${spider.latinName ? `<em>(${spider.latinName})</em>` : ''}
-                    <div style="color: #aaa; margin-top: 5px;">Power: ${spider.powerLevel} | Rarity: ${spider.rarity}</div>
-                </div>
-            `;
-
-            // Show other people's spiders
-            const otherSpiders = spiders.filter(s => s.owner !== currentUser);
-            const listDiv = document.getElementById('otherSpidersList');
-            
-            if (otherSpiders.length === 0) {
-                listDiv.innerHTML = '<p style="color: #666;">No other spiders available for trade</p>';
-            } else {
-                listDiv.innerHTML = otherSpiders.map(s => `
-                    <div class="spider-select" onclick="selectSpiderForTrade(${s.id})" id="spider-select-${s.id}">
-                        <strong>${s.name}</strong> ${s.latinName ? `<em>(${s.latinName})</em>` : ''}
-                        <div style="color: #aaa; margin-top: 5px;">Owner: ${s.owner} | Power: ${s.powerLevel} | Rarity: ${s.rarity}</div>
-                    </div>
-                `).join('');
-            }
-
-            selectedSpiderForTrade = null;
-            document.getElementById('tradeModal').style.display = 'block';
-        }
-
-        function closeTradeModal() {
-            document.getElementById('tradeModal').style.display = 'none';
-            selectedSpiderForTrade = null;
-            tradeModalSourceSpider = null;
-        }
-
-        function selectSpiderForTrade(spiderId) {
-            document.querySelectorAll('.spider-select').forEach(el => {
-                if (el.id.startsWith('spider-select-')) {
-                    el.classList.remove('selected');
-                }
-            });
-            
-            const element = document.getElementById(`spider-select-${spiderId}`);
-            if (element) {
-                element.classList.add('selected');
-                selectedSpiderForTrade = spiderId;
-            }
-        }
-
-        async function submitTradeRequest() {
-            if (!selectedSpiderForTrade || !tradeModalSourceSpider) {
-                alert('Please select a spider to trade for!');
+            const spider = spiders.find(s => s.id === id);
+            if (spider && spider.owner !== currentUser && currentUser !== 'admin') {
+                alert('You can only delete your own spiders!');
                 return;
             }
 
-            const requestedSpider = spiders.find(s => s.id === selectedSpiderForTrade);
-            
-            // Check if trade request already exists
-            const existingTrade = tradeRequests.find(tr => 
-                (tr.offerSpiderId === tradeModalSourceSpider.id && tr.requestSpiderId === selectedSpiderForTrade) ||
-                (tr.offerSpiderId === selectedSpiderForTrade && tr.requestSpiderId === tradeModalSourceSpider.id)
-            );
-
-            if (existingTrade) {
-                alert('A trade request already exists for these spiders!');
-                return;
-            }
-
-            const tradeRequest = {
-                id: Date.now(),
-                offerSpiderId: tradeModalSourceSpider.id,
-                requestSpiderId: selectedSpiderForTrade,
-                fromUser: currentUser,
-                toUser: requestedSpider.owner,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-
-            tradeRequests.push(tradeRequest);
-
-            if (await saveSpiders()) {
-                renderTradeRequests();
-                updateTradesBadge();
-                closeTradeModal();
-                alert('Trade request sent!');
-            }
-        }
-
-        async function acceptTrade(tradeId) {
-            const trade = tradeRequests.find(tr => tr.id === tradeId);
-            if (!trade) return;
-
-            if (trade.toUser !== currentUser) {
-                alert('You can only accept trades sent to you!');
-                return;
-            }
-
-            // Swap ownership
-            const spider1 = spiders.find(s => s.id === trade.offerSpiderId);
-            const spider2 = spiders.find(s => s.id === trade.requestSpiderId);
-
-            if (!spider1 || !spider2) {
-                alert('One of the spiders no longer exists!');
-                tradeRequests = tradeRequests.filter(tr => tr.id !== tradeId);
-                await saveSpiders();
-                renderTradeRequests();
-                updateTradesBadge();
-                return;
-            }
-
-            const temp = spider1.owner;
-            spider1.owner = spider2.owner;
-            spider2.owner = temp;
-
-            // Remove the trade request
-            tradeRequests = tradeRequests.filter(tr => tr.id !== tradeId);
-
-            if (await saveSpiders()) {
-                renderSpiders();
-                renderLeaderboard();
-                renderTradeRequests();
-                updateTradesBadge();
-                alert('Trade completed! 🎉');
-            }
-        }
-
-        async function rejectTrade(tradeId) {
-            const trade = tradeRequests.find(tr => tr.id === tradeId);
-            if (!trade) return;
-
-            if (trade.toUser !== currentUser && trade.fromUser !== currentUser) {
-                alert('You can only reject trades you are involved in!');
-                return;
-            }
-
-            tradeRequests = tradeRequests.filter(tr => tr.id !== tradeId);
-
-            if (await saveSpiders()) {
-                renderTradeRequests();
-                updateTradesBadge();
-                alert('Trade request rejected');
-            }
-        }
-
-        function renderTradeRequests() {
-            const listDiv = document.getElementById('tradeRequestsList');
-            
-            const relevantTrades = tradeRequests.filter(tr => 
-                tr.fromUser === currentUser || tr.toUser === currentUser
-            );
-
-            if (relevantTrades.length === 0) {
-                listDiv.innerHTML = '<p style="color: #666;">No pending trade requests</p>';
-                return;
-            }
-
-            listDiv.innerHTML = relevantTrades.map(trade => {
-                const offerSpider = spiders.find(s => s.id === trade.offerSpiderId);
-                const requestSpider = spiders.find(s => s.id === trade.requestSpiderId);
-
-                if (!offerSpider || !requestSpider) return '';
-
-                const isReceiver = trade.toUser === currentUser;
-                const direction = isReceiver ? 
-                    `${trade.fromUser} wants to trade with you` : 
-                    `You proposed a trade to ${trade.toUser}`;
-
-                return `
-                    <div class="trade-request">
-                        <div class="trade-request-header">${direction}</div>
-                        <div class="trade-details">
-                            <div class="trade-spider">
-                                <strong>${offerSpider.name}</strong>
-                                <div style="color: #aaa; font-size: 0.9em;">Power: ${offerSpider.powerLevel}</div>
-                                <div style="color: #aaa; font-size: 0.9em;">Owner: ${offerSpider.owner}</div>
-                            </div>
-                            <div class="trade-arrow">⇄</div>
-                            <div class="trade-spider">
-                                <strong>${requestSpider.name}</strong>
-                                <div style="color: #aaa; font-size: 0.9em;">Power: ${requestSpider.powerLevel}</div>
-                                <div style="color: #aaa; font-size: 0.9em;">Owner: ${requestSpider.owner}</div>
-                            </div>
-                        </div>
-                        <div class="trade-actions">
-                            ${isReceiver ? `
-                                <button class="accept-btn" onclick="acceptTrade(${trade.id})">✓ Accept</button>
-                                <button class="reject-btn" onclick="rejectTrade(${trade.id})">✕ Reject</button>
-                            ` : `
-                                <button class="reject-btn" onclick="rejectTrade(${trade.id})">Cancel Request</button>
-                            `}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function updateTradesBadge() {
-            const relevantTrades = tradeRequests.filter(tr => 
-                tr.toUser === currentUser
-            );
-            
-            const tabBtn = document.getElementById('tradesTabBtn');
-            const existingBadge = tabBtn.querySelector('.badge');
-            
-            if (relevantTrades.length > 0) {
-                if (!existingBadge) {
-                    tabBtn.innerHTML += `<span class="badge">${relevantTrades.length}</span>`;
-                } else {
-                    existingBadge.textContent = relevantTrades.length;
-                }
-            } else if (existingBadge) {
-                existingBadge.remove();
-            }
+            spiders = spiders.filter(s => s.id !== id);
+            await saveData();
         }
 
         function renderSpiders() {
             const grid = document.getElementById('spiderGrid');
             
-            if (spiders.length === 0) {
-                grid.innerHTML = '<p style="color: #666;">No spiders yet. Add some to get started!</p>';
+            let filtered = spiders.filter(s => s.verified);
+            if (currentFilter === 'mine') {
+                filtered = filtered.filter(s => s.owner === currentUser);
+            }
+
+            const pendingSpiders = spiders.filter(s => s.pending && !s.verified && s.owner === currentUser);
+
+            if (filtered.length === 0 && pendingSpiders.length === 0) {
+                grid.innerHTML = '<p style="color: #666;">No spiders to display.</p>';
                 return;
             }
 
-            grid.innerHTML = spiders.map(spider => {
-                const statsHTML = Object.entries(spider.stats).map(([key, value]) => `
-                    <div class="stat">
-                        <span class="stat-label">${key}:</span>
-                        <span class="stat-value">${value}</span>
+            let html = '';
+
+            if (pendingSpiders.length > 0) {
+                html += pendingSpiders.map(spider => `
+                    <div class="spider-card" style="border: 2px solid rgba(255, 165, 0, 0.8);">
+                        <div style="background: rgba(255, 165, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⏳ Pending Approval</div>
+                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                        <div class="spider-name">${spider.name}</div>
+                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
+                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
                     </div>
                 `).join('');
+            }
 
-                const latinHTML = spider.latinName ? `<div class="spider-latin">${spider.latinName}</div>` : '';
-                const isOwner = spider.owner === currentUser;
+            html += filtered.map(spider => {
+                const ownerHistory = spider.ownerHistory || [spider.owner];
+                const historyText = ownerHistory.length > 1 ? 
+                    `Previous owners: ${ownerHistory.slice(0, -1).join(' → ')}` : '';
+
+                const moveNames = spider.moves ? spider.moves.map(m => m.name).join(', ') : 'Moves will be assigned';
 
                 return `
                     <div class="spider-card">
-                        <img src="${spider.image}" alt="${spider.name}" class="spider-image" onerror="this.src='https://via.placeholder.com/300x200?text=Spider'">
+                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
                         <div class="spider-name">${spider.name}</div>
-                        ${latinHTML}
-                        <div class="spider-stats">
-                            ${statsHTML}
-                            <div class="stat">
-                                <span class="stat-label">Power Level:</span>
-                                <span class="stat-value">${spider.powerLevel}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Rarity:</span>
-                                <span class="stat-value">${spider.rarity}</span>
-                            </div>
-                        </div>
-                        <div class="spider-owner">Owner: ${spider.owner}</div>
-                        <div class="spider-actions">
-                            ${isOwner ? `
-                                <button class="trade-btn" onclick="openTradeModal(${spider.id})">🔄 Trade</button>
-                                <button class="delete-btn" onclick="deleteSpider(${spider.id})">Delete</button>
-                            ` : ''}
-                        </div>
+                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                        <div class="stat"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
+                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
+                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
+                        <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
+                        ${historyText ? `<div class="owner-history">${historyText}</div>` : ''}
+                        <div class="move-list">Moves: ${moveNames}</div>
+                        ${spider.owner === currentUser || currentUser === 'admin' ? `<button onclick="deleteSpider(${spider.id})" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
                     </div>
                 `;
             }).join('');
+
+            grid.innerHTML = html;
         }
 
-        function renderLeaderboard() {
-            const leaderboard = document.getElementById('leaderboardList');
-            
-            if (spiders.length === 0) {
-                leaderboard.innerHTML = '<p style="color: #666;">Load spiders to see rankings...</p>';
+        // ===== BATTLE SYSTEM =====
+        function renderBattleSelect() {
+            const grid = document.getElementById('battleSelectSpiders');
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.hp > 0);
+
+            if (mySpiders.length === 0) {
+                grid.innerHTML = '<p style="color: #666;">You have no healthy verified spiders to battle!</p>';
                 return;
             }
 
-            const sorted = [...spiders].sort((a, b) => b.powerLevel - a.powerLevel);
-            
-            leaderboard.innerHTML = sorted.map((spider, index) => `
-                <div class="leaderboard-item">
-                    <span class="rank">#${index + 1}</span>
-                    <span>${spider.name}</span>
-                    <span style="color: #4ecdc4;">${spider.powerLevel} Power</span>
-                    <span style="color: #aaa;">${spider.owner}</span>
+            grid.innerHTML = mySpiders.map(spider => `
+                <div class="spider-card" style="cursor: pointer;" onclick="selectBattleSpider(${spider.id})">
+                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                    <div class="spider-name">${spider.name}</div>
+                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                    <div class="hp-bar">
+                        <div class="hp-fill ${spider.hp < spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(spider.hp / spider.maxHp) * 100}%">
+                            HP: ${spider.hp}/${spider.maxHp}
+                        </div>
+                    </div>
+                    <button>Select for Battle</button>
                 </div>
             `).join('');
         }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('tradeModal');
-            if (event.target === modal) {
-                closeTradeModal();
+        function selectBattleSpider(spiderId) {
+            selectedBattleSpider = spiders.find(s => s.id === spiderId);
+            if (!selectedBattleSpider.moves) {
+                selectedBattleSpider.moves = generateMoves(selectedBattleSpider);
+            }
+            
+            document.getElementById('battleSelectPhase').classList.add('hidden');
+            document.getElementById('battleOpponentPhase').classList.remove('hidden');
+            renderOpponents();
+        }
+
+        function renderOpponents() {
+            const grid = document.getElementById('battleOpponents');
+            const opponents = spiders.filter(s => s.verified && s.owner !== currentUser && s.hp > 0);
+
+            if (opponents.length === 0) {
+                grid.innerHTML = '<p style="color: #666;">No opponents available!</p>';
+                return;
+            }
+
+            grid.innerHTML = opponents.map(spider => `
+                <div class="spider-card" style="cursor: pointer;" onclick="proposeWager(${spider.id})">
+                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
+                    <div class="spider-name">${spider.name}</div>
+                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
+                    <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
+                    <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
+                    <button>Challenge!</button>
+                </div>
+            `).join('');
+        }
+
+        function proposeWager(opponentId) {
+            const opponent = spiders.find(s => s.id === opponentId);
+            const userCoins = users.find(u => u.username === currentUser).coins || 0;
+            
+            const wager = prompt(`Battle wager?\n\nYou have ${userCoins} coins.\nEnter amount to wager (0 for no wager):`);
+            
+            if (wager === null) return;
+            
+            const wagerAmount = parseInt(wager) || 0;
+            
+            if (wagerAmount > userCoins) {
+                alert('You don\'t have enough coins!');
+                return;
+            }
+            
+            if (wagerAmount < 0) {
+                alert('Invalid wager amount!');
+                return;
+            }
+            
+            startBattle(opponent, wagerAmount);
+        }
+
+        function startBattle(opponent, wager) {
+            if (!opponent.moves) {
+                opponent.moves = generateMoves(opponent);
+            }
+
+            battleState = {
+                player: {
+                    spider: { ...selectedBattleSpider },
+                    currentHp: selectedBattleSpider.hp,
+                    effects: initBattleEffects()
+                },
+                enemy: {
+                    spider: { ...opponent },
+                    currentHp: opponent.hp,
+                    effects: initBattleEffects()
+                },
+                wager: wager,
+                turn: 'enemy',
+                log: [],
+                canUseItems: true
+            };
+
+            battleState.log.push(`⚔️ Battle started! Wager: ${wager} coins`);
+            battleState.log.push(`${battleState.player.spider.name} (Lvl ${battleState.player.spider.level}) vs ${battleState.enemy.spider.name} (Lvl ${battleState.enemy.spider.level})`);
+
+            document.getElementById('battleOpponentPhase').classList.add('hidden');
+            document.getElementById('battleArenaPhase').classList.remove('hidden');
+            
+            renderBattle();
+            
+            if (battleState.turn === 'enemy') {
+                setTimeout(() => enemyTurn(), 2000);
             }
         }
 
+        function renderBattle() {
+            const arena = document.getElementById('battleArenaPhase');
+            const battle = battleState;
+
+            arena.innerHTML = `
+                <button onclick="backToBattleSelect()">← Back to Selection</button>
+                <div class="battle-arena">
+                    <div class="battle-field">
+                        <div class="fighter">
+                            <h3 style="color: #f5576c;">${battle.enemy.spider.name} (Enemy)</h3>
+                            <p style="color: #aaa;">Owner: ${battle.enemy.spider.owner} | Lvl ${battle.enemy.spider.level}</p>
+                            <img src="${battle.enemy.spider.image}" class="fighter-image" alt="${battle.enemy.spider.name}">
+                            <div class="hp-bar">
+                                <div class="hp-fill ${battle.enemy.currentHp < battle.enemy.spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(battle.enemy.currentHp / battle.enemy.spider.maxHp) * 100}%">
+                                    HP: ${Math.max(0, battle.enemy.currentHp)}/${battle.enemy.spider.maxHp}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; align-self: center; font-size: 3em;">⚔️</div>
+                        <div class="fighter">
+                            <h3 style="color: #4ecdc4;">${battle.player.spider.name} (You)</h3>
+                            <p style="color: #aaa;">Lvl ${battle.player.spider.level}</p>
+                            <img src="${battle.player.spider.image}" class="fighter-image" alt="${battle.player.spider.name}">
+                            <div class="hp-bar">
+                                <div class="hp-fill ${battle.player.currentHp < battle.player.spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(battle.player.currentHp / battle.player.spider.maxHp) * 100}%">
+                                    HP: ${Math.max(0, battle.player.currentHp)}/${battle.player.spider.maxHp}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="battle-log">
+                        ${battle.log.map(entry => `<div class="battle-log-entry">${entry}</div>`).join('')}
+                    </div>
+
+                    ${battle.turn === 'player' ? `
+                        <div class="battle-actions">
+                            <div class="action-section">
+                                <h3>⚔️ Moves</h3>
+                                <div class="move-grid">
+                                    ${battle.player.spider.moves.map((move, i) => `
+                                        <button class="move-btn" onclick="useMove(${i})">
+                                            <div class="move-name">${move.name}</div>
+                                            <div class="move-type">${move.type}</div>
+                                            <div class="move-power">Power: ${move.power}</div>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="action-section">
+                                <h3>🎒 Items</h3>
+                                ${renderBattleItems()}
+                                <h3 style="margin-top: 15px;">🏳️ Options</h3>
+                                <button onclick="forfeitBattle()" style="width: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Forfeit Battle</button>
+                            </div>
+                        </div>
+                    ` : `
+                        <p style="text-align: center; color: #ffa500; font-size: 1.2em; margin: 20px 0;">
+                            ${battle.turn === 'enemy' ? 'Enemy is choosing their move...' : 'Processing...'}
+                        </p>
+                    `}
+                </div>
+            `;
+
+            const logElement = arena.querySelector('.battle-log');
+            if (logElement) {
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        }
+
+        function renderBattleItems() {
+            const inventory = getUserInventory();
+            const items = [
+                { key: 'potion', name: 'Potion', heal: 20 },
+                { key: 'superPotion', name: 'Super Potion', heal: 50 },
+                { key: 'fullRestore', name: 'Full Restore', heal: 999 }
+            ];
+
+            const html = items.map(item => {
+                const count = inventory[item.key] || 0;
+                return `
+                    <button class="item-btn" onclick="useItem('${item.key}', ${item.heal})" ${count === 0 ? 'disabled' : ''}>
+                        ${item.name} (${count})
+                    </button>
+                `;
+            }).join('');
+
+            return html || '<p style="color: #666;">No items</p>';
+        }
+
+        async function useMove(moveIndex) {
+            const move = battleState.player.spider.moves[moveIndex];
+            const attacker = battleState.player;
+            const defender = battleState.enemy;
+            
+            // Check if charging
+            if (attacker.effects.charging.active) {
+                battleState.log.push(`${attacker.spider.name} must recharge!`);
+                battleState.turn = 'enemy';
+                renderBattle();
+                setTimeout(() => enemyTurn(), 2000);
+                return;
+            }
+            
+            // Handle charge moves
+            if (move.effect && move.effect.type === 'charge') {
+                attacker.effects.charging.active = true;
+                attacker.effects.charging.move = move;
+                battleState.log.push(`${attacker.spider.name} is charging ${move.name}!`);
+                battleState.turn = 'enemy';
+                renderBattle();
+                setTimeout(() => enemyTurn(), 2000);
+                return;
+            }
+            
+            // Apply move effects
+            applyMoveEffects(move, attacker, defender, 'player');
+            
+            await checkBattleEnd();
+        }
+        
+        async function applyMoveEffects(move, attacker, defender, side) {
+            const attackerName = attacker.spider.name;
+            const defenderName = defender.spider.name;
+            
+            // Stat boost moves
+            if (move.effect && move.effect.type === 'boost') {
+                if (move.effect.stat === 'speed') {
+                    attacker.effects.speedMod += move.effect.amount;
+                    battleState.log.push(`${attackerName} used ${move.name}! Speed increased!`);
+                } else if (move.effect.stat === 'strength') {
+                    attacker.effects.strengthMod += move.effect.amount;
+                    battleState.log.push(`${attackerName} used ${move.name}! Strength increased!`);
+                } else if (move.effect.stat === 'defense') {
+                    attacker.effects.defenseMod += move.effect.amount;
+                    battleState.log.push(`${attackerName} used ${move.name}! Defense increased!`);
+                }
+            }
+            // Accuracy down moves
+            else if (move.effect && move.effect.type === 'accuracy_down') {
+                defender.effects.accuracyMod -= move.effect.amount;
+                battleState.log.push(`${attackerName} used ${move.name}! ${defenderName}'s accuracy fell!`);
+            }
+            // Slow/web moves
+            else if (move.effect && move.effect.type === 'slow') {
+                const damage = calculateDamage(move, attacker, defender);
+                if (damage > 0) {
+                    defender.currentHp -= damage;
+                    battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
+                }
+                defender.effects.speedMod -= move.effect.amount;
+                battleState.log.push(`${defenderName} was slowed by webs!`);
+            }
+            // Trap moves
+            else if (move.effect && move.effect.type === 'trap') {
+                const damage = calculateDamage(move, attacker, defender);
+                if (damage > 0) {
+                    defender.currentHp -= damage;
+                    battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
+                }
+                defender.effects.trapped = { active: true, damage: move.effect.damage, turns: move.effect.turns };
+                battleState.log.push(`${defenderName} was trapped in webs!`);
+            }
+            // Multi-hit moves
+            else if (move.effect && move.effect.type === 'multihit') {
+                let totalDamage = 0;
+                for (let i = 0; i < move.effect.hits; i++) {
+                    const damage = calculateDamage(move, attacker, defender);
+                    totalDamage += damage;
+                    defender.currentHp -= damage;
+                }
+                battleState.log.push(`${attackerName} used ${move.name}! Hit ${move.effect.hits} times for ${totalDamage} total damage!`);
+            }
+            // Drain moves
+            else if (move.effect && move.effect.type === 'drain') {
+                const damage = calculateDamage(move, attacker, defender);
+                defender.currentHp -= damage;
+                const healed = Math.floor(damage * move.effect.percent);
+                attacker.currentHp = Math.min(attacker.currentHp + healed, attacker.spider.maxHp);
+                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage and restored ${healed} HP!`);
+            }
+            // Recoil moves
+            else if (move.effect && move.effect.type === 'recoil') {
+                const damage = calculateDamage(move, attacker, defender);
+                defender.currentHp -= damage;
+                const recoil = Math.floor(damage * move.effect.percent);
+                attacker.currentHp -= recoil;
+                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage but took ${recoil} recoil damage!`);
+            }
+            // Poison moves
+            else if (move.effect && move.effect.type === 'poison') {
+                const damage = calculateDamage(move, attacker, defender);
+                defender.currentHp -= damage;
+                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
+                
+                if (Math.random() < move.effect.chance && !defender.effects.poison.active) {
+                    defender.effects.poison = { active: true, damage: move.effect.damage };
+                    battleState.log.push(`${defenderName} was poisoned!`);
+                }
+            }
+            // Regular damage moves
+            else {
+                const damage = calculateDamage(move, attacker, defender);
+                defender.currentHp -= damage;
+                
+                const critMessage = (move.effect && move.effect.type === 'guaranteed_crit') ? ' Critical hit!' : '';
+                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!${critMessage}`);
+            }
+        }
+        
+        async function checkBattleEnd() {
+            if (battleState.enemy.currentHp <= 0) {
+                await endBattle(true);
+                return true;
+            }
+            if (battleState.player.currentHp <= 0) {
+                await endBattle(false);
+                return true;
+            }
+            
+            battleState.turn = 'enemy';
+            renderBattle();
+            setTimeout(() => enemyTurn(), 2000);
+            return false;
+        }
+        
+        function applyEndOfTurnEffects(fighter, name) {
+            // Poison damage
+            if (fighter.effects.poison.active) {
+                fighter.currentHp -= fighter.effects.poison.damage;
+                battleState.log.push(`${name} took ${fighter.effects.poison.damage} poison damage!`);
+            }
+            
+            // Trap damage
+            if (fighter.effects.trapped.active) {
+                fighter.currentHp -= fighter.effects.trapped.damage;
+                battleState.log.push(`${name} took ${fighter.effects.trapped.damage} damage from webs!`);
+                fighter.effects.trapped.turns--;
+                if (fighter.effects.trapped.turns <= 0) {
+                    fighter.effects.trapped.active = false;
+                    battleState.log.push(`${name} broke free from the webs!`);
+                }
+            }
+            
+            // Clear charging
+            if (fighter.effects.charging.active) {
+                const chargeMove = fighter.effects.charging.move;
+                fighter.effects.charging.active = false;
+                fighter.effects.charging.move = null;
+                return chargeMove; // Return the charged move to use
+            }
+            
+            return null;
+        }
+
+        async function useItem(itemKey, healAmount) {
+            if (!battleState.canUseItems) return;
+
+            const inventory = getUserInventory();
+            if (!inventory[itemKey] || inventory[itemKey] <= 0) {
+                return;
+            }
+
+            inventory[itemKey]--;
+            setUserInventory(inventory);
+
+            const actualHeal = Math.min(healAmount, battleState.player.spider.maxHp - battleState.player.currentHp);
+            battleState.player.currentHp += actualHeal;
+
+            battleState.log.push(`Used ${itemKey}! Restored ${actualHeal} HP!`);
+
+            battleState.turn = 'enemy';
+            renderBattle();
+            setTimeout(() => enemyTurn(), 2000);
+        }
+
+        async function enemyTurn() {
+            const attacker = battleState.enemy;
+            const defender = battleState.player;
+            
+            // Apply end of turn effects and check for charged move
+            const chargedMove = applyEndOfTurnEffects(attacker, attacker.spider.name);
+            applyEndOfTurnEffects(defender, defender.spider.name);
+            
+            // Check if battle ended from effects
+            if (defender.currentHp <= 0) {
+                await endBattle(false);
+                return;
+            }
+            if (attacker.currentHp <= 0) {
+                await endBattle(true);
+                return;
+            }
+            
+            // Use charged move if available, otherwise pick random
+            const move = chargedMove || attacker.spider.moves[Math.floor(Math.random() * attacker.spider.moves.length)];
+            
+            // Apply move effects
+            applyMoveEffects(move, attacker, defender, 'enemy');
+            
+            if (defender.currentHp <= 0) {
+                await endBattle(false);
+                return;
+            }
+
+            battleState.turn = 'player';
+            renderBattle();
+        }
+
+        function calculateDamage(move, attacker, defender) {
+            let damage = move.power;
+            
+            // Stat boosts/debuffs from battle effects
+            const attackerStrength = attacker.strength + (attacker.effects ? attacker.effects.strengthMod : 0);
+            const attackerSpeed = attacker.speed + (attacker.effects ? attacker.effects.speedMod : 0);
+            const defenderDefense = defender.strength + (defender.effects ? defender.effects.defenseMod : 0);
+            
+            if (move.type === 'physical') {
+                damage += Math.floor(attackerStrength / 5);
+            } else if (move.type === 'speed') {
+                damage += Math.floor(attackerSpeed / 5);
+            }
+            
+            // Apply defense
+            damage = Math.max(5, damage - Math.floor(defenderDefense / 10));
+            
+            // Critical hit check
+            const isCrit = (move.effect && move.effect.type === 'guaranteed_crit') || Math.random() < 0.1;
+            if (isCrit && move.power > 0) {
+                damage = Math.floor(damage * 1.5);
+            }
+            
+            // Random variance
+            damage += Math.floor(Math.random() * 10) - 5;
+            
+            return Math.max(1, damage);
+        }
+
+        async function endBattle(playerWon) {
+            const playerSpider = spiders.find(s => s.id === battleState.player.spider.id);
+            const enemySpider = spiders.find(s => s.id === battleState.enemy.spider.id);
+
+            playerSpider.hp = Math.max(0, battleState.player.currentHp);
+            enemySpider.hp = Math.max(0, battleState.enemy.currentHp);
+
+            const playerUser = users.find(u => u.username === currentUser);
+            const enemyUser = users.find(u => u.username === enemySpider.owner);
+
+            if (playerWon) {
+                playerSpider.wins++;
+                enemySpider.losses++;
+                playerUser.coins += 50 + battleState.wager;
+                if (battleState.wager > 0) {
+                    enemyUser.coins = Math.max(0, enemyUser.coins - battleState.wager);
+                }
+                
+                battleState.log.push(`🎉 VICTORY! ${battleState.player.spider.name} wins!`);
+                battleState.log.push(`Earned 50 coins${battleState.wager > 0 ? ` + ${battleState.wager} wager` : ''}!`);
+            } else {
+                playerSpider.losses++;
+                enemySpider.wins++;
+                if (battleState.wager > 0) {
+                    playerUser.coins = Math.max(0, playerUser.coins - battleState.wager);
+                    enemyUser.coins += battleState.wager;
+                }
+                
+                battleState.log.push(`💔 DEFEAT! ${battleState.player.spider.name} fainted!`);
+                if (battleState.wager > 0) {
+                    battleState.log.push(`Lost ${battleState.wager} coins in wager.`);
+                }
+            }
+
+            await saveData();
+            renderBattle();
+
+            setTimeout(() => {
+                alert(playerWon ? '🎉 You won the battle!' : '💔 You lost the battle!');
+                backToBattleSelect();
+            }, 3000);
+        }
+
+        async function forfeitBattle() {
+            if (!confirm('Forfeit this battle? You will lose!')) return;
+            await endBattle(false);
+        }
+
+        function backToBattleSelect() {
+            document.getElementById('battleSelectPhase').classList.remove('hidden');
+            document.getElementById('battleOpponentPhase').classList.add('hidden');
+            document.getElementById('battleArenaPhase').classList.add('hidden');
+            battleState = null;
+            selectedBattleSpider = null;
+            renderBattleSelect();
+        }
+
+        // ===== SHOP & INVENTORY =====
+        function updateShopPrices() {
+            document.getElementById('pricePotion').textContent = shopPrices.potion;
+            document.getElementById('priceSuperPotion').textContent = shopPrices.superPotion;
+            document.getElementById('priceFullRestore').textContent = shopPrices.fullRestore;
+        }
+
+        function renderInventory() {
+            const inventory = getUserInventory();
+            const display = document.getElementById('inventoryDisplay');
+            
+            const items = [
+                { key: 'potion', name: 'Potion' },
+                { key: 'superPotion', name: 'Super Potion' },
+                { key: 'fullRestore', name: 'Full Restore' }
+            ];
+
+            const html = items.map(item => {
+                const count = inventory[item.key] || 0;
+                return `
+                    <div class="inventory-item">
+                        <span>${item.name}</span>
+                        <span>x${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            display.innerHTML = html || '<p style="color: #666;">No items yet</p>';
+        }
+
+        async function buyShopItem(itemKey) {
+            if (!currentUser) {
+                showStatus('shopStatus', 'Please login first!', 'error');
+                return;
+            }
+
+            const user = users.find(u => u.username === currentUser);
+            const price = shopPrices[itemKey];
+
+            if (user.coins < price) {
+                showStatus('shopStatus', `Not enough coins! Need ${price} coins.`, 'error');
+                return;
+            }
+
+            user.coins -= price;
+            
+            const inventory = getUserInventory();
+            inventory[itemKey] = (inventory[itemKey] || 0) + 1;
+            setUserInventory(inventory);
+
+            if (await saveData()) {
+                showStatus('shopStatus', `Purchased ${itemKey}!`, 'success');
+                renderInventory();
+            }
+        }
+
+        // ===== ADMIN FUNCTIONS =====
+        function checkAdminAccess() {
+            if (currentUser === 'admin') {
+                document.getElementById('adminAccessDenied').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                renderAdminPanel();
+            } else {
+                document.getElementById('adminAccessDenied').classList.remove('hidden');
+                document.getElementById('adminContent').classList.add('hidden');
+            }
+        }
+
+        function renderAdminPanel() {
+            if (currentUser !== 'admin') return;
+
+            const pendingSpiders = spiders.filter(s => s.pending && !s.verified);
+            const queueDiv = document.getElementById('verificationQueue');
+
+            if (pendingSpiders.length === 0) {
+                queueDiv.innerHTML = '<p style="color: #666;">No pending spiders</p>';
+            } else {
+                queueDiv.innerHTML = pendingSpiders.map(spider => `
+                    <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.5); padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
+                        <img src="${spider.image}" style="max-width: 300px; max-height: 300px; border-radius: 10px; margin-bottom: 15px;" alt="${spider.name}">
+                        <h3>${spider.name}</h3>
+                        <p style="color: #aaa;">By: ${spider.owner}</p>
+                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
+                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+                            <button onclick="verifySpider(${spider.id}, true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
+                            <button onclick="verifySpider(${spider.id}, false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('adminMoves').value = JSON.stringify(MOVE_LIST, null, 2);
+            document.getElementById('adminPricePotion').value = shopPrices.potion;
+            document.getElementById('adminPriceSuperPotion').value = shopPrices.superPotion;
+            document.getElementById('adminPriceFullRestore').value = shopPrices.fullRestore;
+
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = users.map(user => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin: 5px 0; background: rgba(255, 255, 255, 0.05); border-radius: 5px;">
+                    <div>
+                        <strong>${user.username}</strong>
+                        <div style="color: #aaa; font-size: 0.9em;">
+                            Coins: ${user.coins || 0} | 
+                            Spiders: ${spiders.filter(s => s.owner === user.username && s.verified).length}
+                        </div>
+                    </div>
+                    ${user.username !== 'admin' ? `<button onclick="deleteUser('${user.username}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function verifySpider(spiderId, approved) {
+            const spider = spiders.find(s => s.id === spiderId);
+            if (!spider) return;
+
+            if (approved) {
+                spider.verified = true;
+                spider.pending = false;
+                spider.moves = generateMoves(spider);
+                
+                const owner = users.find(u => u.username === spider.owner);
+                if (owner) owner.coins += 50;
+                
+                showStatus('adminStatus', `Spider approved! ${spider.owner} earned 50 coins.`, 'success');
+            } else {
+                spiders = spiders.filter(s => s.id !== spiderId);
+                showStatus('adminStatus', 'Spider denied and removed.', 'error');
+            }
+
+            await saveData();
+            renderAdminPanel();
+        }
+
+        async function saveMoveList() {
+            try {
+                MOVE_LIST = JSON.parse(document.getElementById('adminMoves').value);
+                if (await saveData()) {
+                    showStatus('adminStatus', 'Move list updated!', 'success');
+                }
+            } catch (e) {
+                showStatus('adminStatus', 'Invalid JSON format!', 'error');
+            }
+        }
+
+        async function saveShopPrices() {
+            shopPrices.potion = parseInt(document.getElementById('adminPricePotion').value);
+            shopPrices.superPotion = parseInt(document.getElementById('adminPriceSuperPotion').value);
+            shopPrices.fullRestore = parseInt(document.getElementById('adminPriceFullRestore').value);
+
+            if (await saveData()) {
+                showStatus('adminStatus', 'Shop prices updated!', 'success');
+                updateShopPrices();
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Delete user ${username}?`)) return;
+            users = users.filter(u => u.username !== username);
+            spiders = spiders.filter(s => s.owner !== username);
+            await saveData();
+            renderAdminPanel();
+        }
+
+        // ===== INITIALIZATION =====
         loadConfig();
-        updateAutoConfigStatus();
     </script>
 </body>
 </html>
