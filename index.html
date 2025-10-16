@@ -452,6 +452,7 @@
 
         <div class="config-toggle">
             <button onclick="toggleConfig()">⚙️ Settings</button>
+            <span id="autoConfigStatus" style="margin-left: 15px; color: #4ecdc4;"></span>
         </div>
 
         <div id="configSection" class="config-section hidden">
@@ -598,7 +599,7 @@
     <script>
         // ⚙️ CONFIGURATION - Set these values once and everyone uses them automatically
         const AUTO_CONFIG = {
-            githubToken: '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',
+            githubToken: '', // Paste your GitHub token here: 'ghp_xxxxx...'
             gistId: ''       // Paste your Gist ID here after first setup
         };
 
@@ -797,6 +798,20 @@
         function toggleConfig() {
             const section = document.getElementById('configSection');
             section.classList.toggle('hidden');
+        }
+
+        function updateAutoConfigStatus() {
+            const statusEl = document.getElementById('autoConfigStatus');
+            if (AUTO_CONFIG.githubToken && AUTO_CONFIG.gistId) {
+                statusEl.textContent = '✓ Auto-configured';
+                statusEl.style.color = '#4ecdc4';
+            } else if (config.githubToken && config.gistId) {
+                statusEl.textContent = '✓ Configured';
+                statusEl.style.color = '#4ecdc4';
+            } else {
+                statusEl.textContent = '⚠ Not configured';
+                statusEl.style.color = '#ffa500';
+            }
         }
 
         function switchTab(tab) {
@@ -1369,7 +1384,7 @@
         }
 
         loadConfig();
+        updateAutoConfigStatus();
     </script>
 </body>
 </html>
-
