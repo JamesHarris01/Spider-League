@@ -472,6 +472,97 @@
                 padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
         }
+        
+        /* Battle tab pulse animation */
+        @keyframes pulse {
+            0%, 100% { 
+                background: rgba(255, 255, 255, 0.1);
+            }
+            50% { 
+                background: rgba(255, 87, 108, 0.3);
+                box-shadow: 0 0 20px rgba(255, 87, 108, 0.5);
+            }
+        }
+        
+        /* Bug report button */
+        .bug-report-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bug-report-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .bug-report-btn:active {
+            transform: translateY(0);
+        }
+        
+        .bug-report-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .bug-report-modal.active {
+            display: flex;
+        }
+        
+        .bug-report-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #4ecdc4;
+        }
+        
+        .bug-report-content h2 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+        }
+        
+        .bug-report-content textarea {
+            width: 100%;
+            min-height: 150px;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        
+        @media (max-width: 640px) {
+            .bug-report-btn {
+                bottom: 15px;
+                right: 15px;
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -533,7 +624,7 @@
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('collection')">🕸️ Collection</button>
             <button class="tab-btn" onclick="switchTab('add')">➕ Add Spider</button>
-            <button class="tab-btn" onclick="switchTab('battle')">⚔️ Battle</button>
+            <button class="tab-btn" onclick="switchTab('battle')" id="battleTabBtn">⚔️ Battle</button>
             <button class="tab-btn" onclick="switchTab('trade')">🔄 Trade</button>
             <button class="tab-btn" onclick="switchTab('shop')">🛒 Shop & Inventory</button>
             <button class="tab-btn hidden" onclick="switchTab('admin')" id="adminTab">👑 Admin</button>
@@ -562,8 +653,20 @@
                     <input type="text" id="spiderName" placeholder="e.g., Sir Websworth">
                 </div>
                 <div class="input-group">
-                    <label>Image URL:</label>
-                    <input type="text" id="spiderImage" placeholder="Image URL">
+                    <label>Latin Name (Scientific):</label>
+                    <input type="text" id="spiderLatinName" placeholder="e.g., Araneus diadematus">
+                </div>
+                <div class="input-group">
+                    <label>Spider Image:</label>
+                    <div style="display: flex; gap: 10px; flex-direction: column;">
+                        <input type="file" id="spiderImageFile" accept="image/*" onchange="handleImageUpload(event)" style="padding: 8px;">
+                        <p style="color: #aaa; font-size: 0.85em; margin: 5px 0;">OR</p>
+                        <input type="text" id="spiderImage" placeholder="Image URL (if not uploading)">
+                    </div>
+                    <div id="imagePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; max-height: 200px; border-radius: 10px; border: 2px solid rgba(78, 205, 196, 0.5);">
+                        <p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Image ready to upload</p>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Strength (1-100):</label>
@@ -573,6 +676,12 @@
                     <label>Speed (1-100):</label>
                     <input type="number" id="speed" min="1" max="100" value="50">
                 </div>
+                
+                <h3 style="color: #4ecdc4; margin-top: 20px;">Custom Fields</h3>
+                <p style="color: #aaa; font-size: 0.9em; margin-bottom: 10px;">Add your own custom stats and information!</p>
+                <div id="customFieldsContainer"></div>
+                <button onclick="addCustomField()" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); margin-bottom: 15px;">+ Add Custom Field</button>
+                
                 <button onclick="addSpider()">Submit Spider for Approval</button>
                 <div id="addStatus"></div>
             </div>
@@ -705,11 +814,48 @@
                     <textarea id="adminTaglines" rows="8" style="font-family: inherit; font-size: 14px;" placeholder="Enter one tagline per line..."></textarea>
                     <button onclick="saveTaglines()">Save Taglines</button>
 
+                    <div style="margin-top: 30px;" id="adminBugReports"></div>
+
                     <h3 style="color: #4ecdc4; margin-top: 30px;">👥 User Management</h3>
                     <div id="usersList" style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;"></div>
                     
                     <div id="adminStatus"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Bug Report Button -->
+        <button class="bug-report-btn" onclick="openBugReport()">
+            🐛 Report Bug
+        </button>
+
+        <!-- Bug Report Modal -->
+        <div id="bugReportModal" class="bug-report-modal" onclick="closeBugReportOnOverlay(event)">
+            <div class="bug-report-content" onclick="event.stopPropagation()">
+                <h2>🐛 Report a Bug</h2>
+                <p style="color: #aaa; margin-bottom: 15px;">Help us improve Spider League! Describe the bug you encountered.</p>
+                
+                <div class="input-group">
+                    <label>What happened?</label>
+                    <textarea id="bugDescription" placeholder="Describe the bug in detail..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>Steps to reproduce (optional):</label>
+                    <textarea id="bugSteps" rows="4" placeholder="1. Go to...&#10;2. Click on...&#10;3. See error"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>Your username (optional):</label>
+                    <input type="text" id="bugReporterName" placeholder="So we can follow up with you">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="submitBugReport()" style="flex: 1; background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">Submit Report</button>
+                    <button onclick="closeBugReport()" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Cancel</button>
+                </div>
+                
+                <div id="bugReportStatus"></div>
             </div>
         </div>
     </div>
@@ -768,6 +914,9 @@
         let battleState = null;
         let selectedBattleSpider = null;
         let tradeOffers = [];
+        let customFieldsCount = 0;
+        let uploadedImageData = null; // Store uploaded image as base64
+        let bugReports = [];
         let taglines = [
             "Spider League: Because Therapy Was Booked",
             "Eight Legs, Zero Thoughts",
@@ -838,6 +987,117 @@
         }
 
         // ===== UTILITY FUNCTIONS =====
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                uploadedImageData = null;
+                document.getElementById('imagePreview').style.display = 'none';
+                return;
+            }
+
+            // Check file size (max 2MB to keep gist reasonable)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Image too large! Please use an image under 2MB.');
+                event.target.value = '';
+                uploadedImageData = null;
+                document.getElementById('imagePreview').style.display = 'none';
+                return;
+            }
+
+            // Check if it's an image
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file!');
+                event.target.value = '';
+                uploadedImageData = null;
+                document.getElementById('imagePreview').style.display = 'none';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImageData = e.target.result; // Store as base64
+                
+                // Show preview
+                const preview = document.getElementById('imagePreview');
+                const previewImg = document.getElementById('previewImg');
+                previewImg.src = uploadedImageData;
+                preview.style.display = 'block';
+
+                // Clear URL input if they uploaded a file
+                document.getElementById('spiderImage').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function calculateTotalPower(spider) {
+            let sum = spider.strength + spider.speed;
+            let count = 2;
+            
+            // Add custom numeric fields to power calculation
+            if (spider.customFields) {
+                for (const field of spider.customFields) {
+                    const value = parseFloat(field.value);
+                    if (!isNaN(value)) {
+                        sum += value;
+                        count++;
+                    }
+                }
+            }
+            
+            return Math.round(sum / count);
+        }
+        
+        function addCustomField() {
+            customFieldsCount++;
+            const container = document.getElementById('customFieldsContainer');
+            const fieldId = `customField_${customFieldsCount}`;
+            
+            const fieldHTML = `
+                <div id="${fieldId}" style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.9em;">Field Name:</label>
+                            <input type="text" class="custom-field-name" placeholder="e.g., Venom Level, Agility, Cuteness" style="margin-top: 5px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.9em;">Value:</label>
+                            <input type="text" class="custom-field-value" placeholder="Any value (text or number)" style="margin-top: 5px;">
+                        </div>
+                    </div>
+                    <button onclick="removeCustomField('${fieldId}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 8px 16px; font-size: 0.9em;">Remove</button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', fieldHTML);
+        }
+        
+        function removeCustomField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) field.remove();
+        }
+        
+        function getCustomFields() {
+            const container = document.getElementById('customFieldsContainer');
+            const fields = [];
+            
+            const fieldDivs = container.querySelectorAll('[id^="customField_"]');
+            fieldDivs.forEach(div => {
+                const name = div.querySelector('.custom-field-name').value.trim();
+                const value = div.querySelector('.custom-field-value').value.trim();
+                
+                if (name && value) {
+                    fields.push({ name, value });
+                }
+            });
+            
+            return fields;
+        }
+        
+        function clearCustomFields() {
+            document.getElementById('customFieldsContainer').innerHTML = '';
+            customFieldsCount = 0;
+        }
+
         function toggleConfig() {
             document.getElementById('configSection').classList.toggle('hidden');
         }
@@ -1040,6 +1300,9 @@
         }
 
         // ===== DATA PERSISTENCE =====
+        let saveTimeout = null;
+        let pendingSave = false;
+
         async function loadData() {
             if (!config.githubToken || !config.gistId) return;
 
@@ -1062,6 +1325,7 @@
                 MOVE_LIST = content.moveList || MOVE_LIST;
                 taglines = content.taglines || taglines;
                 tradeOffers = content.tradeOffers || [];
+                bugReports = content.bugReports || [];
                 
                 renderSpiders();
                 updateCoins();
@@ -1073,13 +1337,35 @@
             }
         }
 
+        // Debounced save - waits 2 seconds of inactivity before saving
+        function debouncedSave() {
+            pendingSave = true;
+            
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+            }
+            
+            saveTimeout = setTimeout(async () => {
+                await saveDataNow();
+                pendingSave = false;
+            }, 2000);
+        }
+
+        // Immediate save for critical operations
         async function saveData() {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+            }
+            return await saveDataNow();
+        }
+
+        async function saveDataNow() {
             if (!config.githubToken) {
-                alert('Please configure GitHub token first!');
+                console.error('No GitHub token configured');
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports };
 
             try {
                 if (!config.gistId) {
@@ -1128,7 +1414,6 @@
                     if (!response.ok) return false;
                 }
 
-                await loadData();
                 return true;
             } catch (error) {
                 console.error('Save error:', error);
@@ -1144,23 +1429,37 @@
             }
 
             const name = document.getElementById('spiderName').value.trim();
-            const image = document.getElementById('spiderImage').value.trim();
+            const latinName = document.getElementById('spiderLatinName').value.trim();
+            const imageUrl = document.getElementById('spiderImage').value.trim();
             const strength = parseInt(document.getElementById('strength').value);
             const speed = parseInt(document.getElementById('speed').value);
+            const customFields = getCustomFields();
 
             if (!name) {
                 showStatus('addStatus', 'Please enter a spider name!', 'error');
                 return;
             }
 
+            // Use uploaded image if available, otherwise use URL or placeholder
+            let finalImage;
+            if (uploadedImageData) {
+                finalImage = uploadedImageData; // Base64 data
+            } else if (imageUrl) {
+                finalImage = imageUrl;
+            } else {
+                finalImage = 'https://via.placeholder.com/300x200?text=Spider';
+            }
+
             const spider = {
                 id: Date.now(),
                 name,
-                image: image || 'https://via.placeholder.com/300x200?text=Spider',
+                latinName: latinName || null,
+                image: finalImage,
                 owner: currentUser,
                 ownerHistory: [currentUser],
                 strength,
                 speed,
+                customFields: customFields,
                 level: 1,
                 hp: 100,
                 maxHp: 100,
@@ -1176,9 +1475,14 @@
             if (await saveData()) {
                 showStatus('addStatus', 'Spider submitted for admin approval!', 'success');
                 document.getElementById('spiderName').value = '';
+                document.getElementById('spiderLatinName').value = '';
                 document.getElementById('spiderImage').value = '';
+                document.getElementById('spiderImageFile').value = '';
                 document.getElementById('strength').value = 50;
                 document.getElementById('speed').value = 50;
+                document.getElementById('imagePreview').style.display = 'none';
+                uploadedImageData = null;
+                clearCustomFields();
             }
         }
 
@@ -1192,7 +1496,12 @@
             }
 
             spiders = spiders.filter(s => s.id !== id);
-            await saveData();
+            
+            // Update UI immediately
+            renderSpiders();
+            
+            // Save in background
+            debouncedSave();
         }
 
         function renderSpiders() {
@@ -1218,8 +1527,13 @@
                         <div style="background: rgba(255, 165, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⏳ Pending Approval</div>
                         <img src="${spider.image}" class="spider-image" alt="${spider.name}">
                         <div class="spider-name">${spider.name}</div>
+                        ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
+                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
+                        `).join('') : ''}
+                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                     </div>
                 `).join('');
             }
@@ -1235,10 +1549,15 @@
                     <div class="spider-card">
                         <img src="${spider.image}" class="spider-image" alt="${spider.name}">
                         <div class="spider-name">${spider.name}</div>
+                        ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
                         <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
                         <div class="stat"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
+                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
+                        `).join('') : ''}
+                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                         <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
                         <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
                         ${historyText ? `<div class="owner-history">${historyText}</div>` : ''}
@@ -1339,25 +1658,38 @@
             battleState = {
                 player: {
                     spider: { ...selectedBattleSpider },
-                    currentHp: selectedBattleSpider.hp,
-                    effects: initBattleEffects()
+                    currentHp: selectedBattleSpider.hp || selectedBattleSpider.maxHp
                 },
                 enemy: {
                     spider: { ...opponent },
-                    currentHp: opponent.hp,
-                    effects: initBattleEffects()
+                    currentHp: opponent.hp || opponent.maxHp
                 },
                 wager: wager,
                 turn: 'enemy',
                 log: [],
                 canUseItems: true
             };
+            
+            // Ensure effects are initialized
+            battleState.player.effects = initBattleEffects();
+            battleState.enemy.effects = initBattleEffects();
+            
+            // Ensure spiders have proper stats
+            battleState.player.spider.strength = battleState.player.spider.strength || 50;
+            battleState.player.spider.speed = battleState.player.spider.speed || 50;
+            battleState.player.spider.maxHp = battleState.player.spider.maxHp || 100;
+            battleState.enemy.spider.strength = battleState.enemy.spider.strength || 50;
+            battleState.enemy.spider.speed = battleState.enemy.spider.speed || 50;
+            battleState.enemy.spider.maxHp = battleState.enemy.spider.maxHp || 100;
 
             battleState.log.push(`⚔️ Battle started! Wager: ${wager} coins`);
             battleState.log.push(`${battleState.player.spider.name} (Lvl ${battleState.player.spider.level}) vs ${battleState.enemy.spider.name} (Lvl ${battleState.enemy.spider.level})`);
 
             document.getElementById('battleOpponentPhase').classList.add('hidden');
             document.getElementById('battleArenaPhase').classList.remove('hidden');
+            
+            // Update battle tab indicator
+            updateBattleTabIndicator();
             
             renderBattle();
             
@@ -1678,10 +2010,10 @@
         function calculateDamage(move, attacker, defender) {
             let damage = move.power;
             
-            // Stat boosts/debuffs from battle effects
-            const attackerStrength = attacker.strength + (attacker.effects ? attacker.effects.strengthMod : 0);
-            const attackerSpeed = attacker.speed + (attacker.effects ? attacker.effects.speedMod : 0);
-            const defenderDefense = defender.strength + (defender.effects ? defender.effects.defenseMod : 0);
+            // Get base stats, defaulting to 50 if undefined
+            const attackerStrength = (attacker.strength || 50) + (attacker.effects ? attacker.effects.strengthMod : 0);
+            const attackerSpeed = (attacker.speed || 50) + (attacker.effects ? attacker.effects.speedMod : 0);
+            const defenderDefense = (defender.strength || 50) + (defender.effects ? defender.effects.defenseMod : 0);
             
             if (move.type === 'physical') {
                 damage += Math.floor(attackerStrength / 5);
@@ -1758,7 +2090,25 @@
             document.getElementById('battleArenaPhase').classList.add('hidden');
             battleState = null;
             selectedBattleSpider = null;
+            
+            // Update battle tab indicator
+            updateBattleTabIndicator();
+            
             renderBattleSelect();
+        }
+        
+        function updateBattleTabIndicator() {
+            const battleBtn = document.getElementById('battleTabBtn');
+            if (battleState) {
+                // Battle in progress
+                battleBtn.innerHTML = '⚔️ Battle 🔴';
+                battleBtn.style.position = 'relative';
+                battleBtn.style.animation = 'pulse 2s infinite';
+            } else {
+                // No battle
+                battleBtn.innerHTML = '⚔️ Battle';
+                battleBtn.style.animation = 'none';
+            }
         }
 
         // ===== TRADING SYSTEM =====
@@ -1788,15 +2138,34 @@
                 const offeredSpider = spiders.find(s => s.id === offer.spiderId);
                 if (!offeredSpider) return '';
 
+                const requestedSpider = offer.requestedSpiderId ? spiders.find(s => s.id === offer.requestedSpiderId) : null;
+
                 return `
                     <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
                         <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <img src="${offeredSpider.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                             <div style="flex: 1; min-width: 200px;">
-                                <h4 style="color: #4ecdc4; margin-bottom: 5px;">${offeredSpider.name}</h4>
-                                <p style="color: #aaa; font-size: 0.9em;">From: <strong>${offer.fromUser}</strong></p>
-                                <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                <h4 style="color: #4ecdc4; margin-bottom: 10px;">📥 Offering You:</h4>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                    <img src="${offeredSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                    <div>
+                                        <p style="color: #4ecdc4; font-weight: bold;">${offeredSpider.name}</p>
+                                        <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                    </div>
+                                </div>
                                 ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
+                                
+                                ${requestedSpider ? `
+                                    <h4 style="color: #ffa500; margin-top: 15px; margin-bottom: 10px;">📤 Requesting From You:</h4>
+                                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                        <img src="${requestedSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                        <div>
+                                            <p style="color: #ffa500; font-weight: bold;">${requestedSpider.name}</p>
+                                            <p style="color: #aaa; font-size: 0.9em;">Level ${requestedSpider.level} | ${requestedSpider.wins}W - ${requestedSpider.losses}L</p>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">From: <strong>${offer.fromUser}</strong></p>
                                 ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
                             </div>
                             <div style="display: flex; gap: 10px; flex-direction: column;">
@@ -1822,15 +2191,34 @@
                 const offeredSpider = spiders.find(s => s.id === offer.spiderId);
                 if (!offeredSpider) return '';
 
+                const requestedSpider = offer.requestedSpiderId ? spiders.find(s => s.id === offer.requestedSpiderId) : null;
+
                 return `
                     <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
                         <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <img src="${offeredSpider.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                             <div style="flex: 1; min-width: 200px;">
-                                <h4 style="color: #ffa500; margin-bottom: 5px;">${offeredSpider.name}</h4>
-                                <p style="color: #aaa; font-size: 0.9em;">To: <strong>${offer.toUser}</strong></p>
-                                <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                <h4 style="color: #ffa500; margin-bottom: 10px;">📤 You're Offering:</h4>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                    <img src="${offeredSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                    <div>
+                                        <p style="color: #ffa500; font-weight: bold;">${offeredSpider.name}</p>
+                                        <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
+                                    </div>
+                                </div>
                                 ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
+                                
+                                ${requestedSpider ? `
+                                    <h4 style="color: #4ecdc4; margin-top: 15px; margin-bottom: 10px;">📥 Requesting:</h4>
+                                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                        <img src="${requestedSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                        <div>
+                                            <p style="color: #4ecdc4; font-weight: bold;">${requestedSpider.name}</p>
+                                            <p style="color: #aaa; font-size: 0.9em;">Level ${requestedSpider.level} | ${requestedSpider.wins}W - ${requestedSpider.losses}L</p>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">To: <strong>${offer.toUser}</strong></p>
                                 ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
                                 <p style="color: #888; font-size: 0.8em; margin-top: 5px;">⏳ Waiting for response...</p>
                             </div>
@@ -1888,6 +2276,32 @@
                 return;
             }
 
+            // Ask what they want in return
+            const tradeType = confirm('Click OK to request a specific spider in return\nClick Cancel to just send your spider (with optional coins)');
+            
+            let requestedSpiderId = null;
+            if (tradeType) {
+                // Show available spiders from recipient
+                const recipientSpiders = spiders.filter(s => s.owner === recipient && s.verified);
+                if (recipientSpiders.length === 0) {
+                    alert('This user has no spiders to trade!');
+                    return;
+                }
+                
+                const spiderList = recipientSpiders.map((s, i) => `${i + 1}. ${s.name} (Lvl ${s.level})`).join('\n');
+                const spiderChoice = prompt(`Which spider do you want in return?\n\n${spiderList}\n\nEnter the number:`);
+                
+                if (!spiderChoice) return;
+                
+                const choiceIndex = parseInt(spiderChoice) - 1;
+                if (choiceIndex < 0 || choiceIndex >= recipientSpiders.length) {
+                    alert('Invalid choice!');
+                    return;
+                }
+                
+                requestedSpiderId = recipientSpiders[choiceIndex].id;
+            }
+
             const coinsInput = prompt(`Add coins to the trade? (0 for no coins)\n\nYour balance: ${users.find(u => u.username === currentUser).coins} coins`);
             const coins = parseInt(coinsInput) || 0;
 
@@ -1903,15 +2317,16 @@
 
             const message = prompt('Add a message? (optional)') || '';
 
-            createTradeOffer(spiderId, recipient, coins, message);
+            createTradeOffer(spiderId, recipient, coins, message, requestedSpiderId);
         }
 
-        async function createTradeOffer(spiderId, toUser, coins, message) {
+        async function createTradeOffer(spiderId, toUser, coins, message, requestedSpiderId = null) {
             const offer = {
                 id: `trade_${Date.now()}`,
                 fromUser: currentUser,
                 toUser: toUser,
                 spiderId: spiderId,
+                requestedSpiderId: requestedSpiderId,
                 coins: coins,
                 message: message,
                 status: 'pending',
@@ -1920,9 +2335,12 @@
 
             tradeOffers.push(offer);
 
+            // Update UI immediately
+            renderTradeTab();
+            
+            // Save in background
             if (await saveData()) {
-                alert('Trade offer sent!');
-                renderTradeTab();
+                showStatus('shopStatus', 'Trade offer sent!', 'success');
             }
         }
 
@@ -1933,20 +2351,49 @@
                 return;
             }
 
-            const spider = spiders.find(s => s.id === offer.spiderId);
-            if (!spider) {
+            const offeredSpider = spiders.find(s => s.id === offer.spiderId);
+            if (!offeredSpider) {
                 alert('Spider not found!');
                 return;
             }
 
-            if (!confirm(`Accept trade for ${spider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}?`)) {
-                return;
-            }
+            // Check if this is a spider-for-spider trade
+            if (offer.requestedSpiderId) {
+                const requestedSpider = spiders.find(s => s.id === offer.requestedSpiderId);
+                if (!requestedSpider) {
+                    alert('Requested spider not found!');
+                    return;
+                }
+                
+                if (requestedSpider.owner !== currentUser) {
+                    alert('You no longer own the requested spider!');
+                    return;
+                }
 
-            // Transfer spider
-            spider.ownerHistory = spider.ownerHistory || [spider.owner];
-            spider.ownerHistory.push(currentUser);
-            spider.owner = currentUser;
+                const confirmMsg = `Accept trade?\n\nYou give: ${requestedSpider.name}\nYou receive: ${offeredSpider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}`;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+
+                // Transfer both spiders
+                offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
+                offeredSpider.ownerHistory.push(currentUser);
+                offeredSpider.owner = currentUser;
+
+                requestedSpider.ownerHistory = requestedSpider.ownerHistory || [requestedSpider.owner];
+                requestedSpider.ownerHistory.push(offer.fromUser);
+                requestedSpider.owner = offer.fromUser;
+            } else {
+                // Just receiving a spider (+ maybe coins)
+                if (!confirm(`Accept trade for ${offeredSpider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}?`)) {
+                    return;
+                }
+
+                // Transfer spider
+                offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
+                offeredSpider.ownerHistory.push(currentUser);
+                offeredSpider.owner = currentUser;
+            }
 
             // Transfer coins
             if (offer.coins > 0) {
@@ -1959,10 +2406,13 @@
             // Mark offer as accepted
             offer.status = 'accepted';
 
+            // Update UI immediately
+            renderTradeTab();
+            updateCoins();
+            
+            // Save in background
             if (await saveData()) {
                 alert('Trade accepted!');
-                renderTradeTab();
-                updateCoins();
             }
         }
 
@@ -1975,10 +2425,11 @@
 
             offer.status = 'rejected';
 
-            if (await saveData()) {
-                alert('Trade rejected');
-                renderTradeTab();
-            }
+            // Update UI immediately
+            renderTradeTab();
+            
+            // Save in background
+            debouncedSave();
         }
 
         async function cancelTrade(offerId) {
@@ -1992,10 +2443,11 @@
 
             offer.status = 'cancelled';
 
-            if (await saveData()) {
-                alert('Trade cancelled');
-                renderTradeTab();
-            }
+            // Update UI immediately
+            renderTradeTab();
+            
+            // Save in background
+            debouncedSave();
         }
 
         // ===== SHOP & INVENTORY =====
@@ -2145,9 +2597,14 @@
                     <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.5); padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
                         <img src="${spider.image}" style="max-width: 300px; max-height: 300px; border-radius: 10px; margin-bottom: 15px;" alt="${spider.name}">
                         <h3>${spider.name}</h3>
+                        ${spider.latinName ? `<p style="font-style: italic; color: #aaa;">${spider.latinName}</p>` : ''}
                         <p style="color: #aaa;">By: ${spider.owner}</p>
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
+                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
+                        `).join('') : ''}
+                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
                             <button onclick="verifySpider(${spider.id}, true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
                             <button onclick="verifySpider(${spider.id}, false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
@@ -2161,6 +2618,9 @@
             document.getElementById('adminPriceSuperPotion').value = shopPrices.superPotion;
             document.getElementById('adminPriceFullRestore').value = shopPrices.fullRestore;
             document.getElementById('adminTaglines').value = taglines.join('\n');
+
+            // Render bug reports
+            document.getElementById('adminBugReports').innerHTML = renderBugReports();
 
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = users.map(user => `
@@ -2242,13 +2702,215 @@
             if (!confirm(`Delete user ${username}?`)) return;
             users = users.filter(u => u.username !== username);
             spiders = spiders.filter(s => s.owner !== username);
+            
+            // Update UI immediately
+            renderAdminPanel();
+            
+            // Save in background
+            debouncedSave();
+        }
+
+        // ===== BUG REPORT SYSTEM =====
+        function openBugReport() {
+            document.getElementById('bugReportModal').classList.add('active');
+            // Pre-fill username if logged in
+            if (currentUser) {
+                document.getElementById('bugReporterName').value = currentUser;
+            }
+        }
+
+        function closeBugReport() {
+            document.getElementById('bugReportModal').classList.remove('active');
+            document.getElementById('bugDescription').value = '';
+            document.getElementById('bugSteps').value = '';
+            document.getElementById('bugReporterName').value = '';
+            document.getElementById('bugReportStatus').innerHTML = '';
+        }
+
+        function closeBugReportOnOverlay(event) {
+            if (event.target.id === 'bugReportModal') {
+                closeBugReport();
+            }
+        }
+
+        async function submitBugReport() {
+            const description = document.getElementById('bugDescription').value.trim();
+            const steps = document.getElementById('bugSteps').value.trim();
+            const reporterName = document.getElementById('bugReporterName').value.trim() || 'Anonymous';
+
+            if (!description) {
+                showStatus('bugReportStatus', 'Please describe the bug!', 'error');
+                return;
+            }
+
+            const report = {
+                id: `bug_${Date.now()}`,
+                description: description,
+                steps: steps,
+                reportedBy: reporterName,
+                timestamp: new Date().toISOString(),
+                status: 'open'
+            };
+
+            bugReports.push(report);
+
+            if (await saveData()) {
+                showStatus('bugReportStatus', 'Bug report submitted! Thank you!', 'success');
+                setTimeout(() => {
+                    closeBugReport();
+                }, 2000);
+            } else {
+                showStatus('bugReportStatus', 'Failed to submit. Please try again.', 'error');
+            }
+        }
+
+        function renderBugReports() {
+            if (currentUser !== 'admin') return '';
+
+            const openReports = bugReports.filter(r => r.status === 'open');
+            const closedReports = bugReports.filter(r => r.status === 'closed');
+
+            let html = '<h3 style="color: #4ecdc4; margin-bottom: 15px;">🐛 Bug Reports</h3>';
+            
+            html += `
+                <div style="background: rgba(78, 205, 196, 0.1); border: 2px solid rgba(78, 205, 196, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <p style="color: #4ecdc4; font-size: 1.1em;"><strong>Total Reports:</strong> ${bugReports.length}</p>
+                            <p style="color: #ffa500; font-size: 0.95em;">Open: ${openReports.length} | Closed: ${closedReports.length}</p>
+                        </div>
+                        ${bugReports.length > 0 ? `
+                            <button onclick="clearAllBugReports()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 10px 20px;">
+                                🗑️ Clear All Reports
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            if (openReports.length === 0 && closedReports.length === 0) {
+                html += '<p style="color: #666; margin-bottom: 20px;">No bug reports yet</p>';
+                return html;
+            }
+
+            if (openReports.length > 0) {
+                html += '<div style="margin-bottom: 30px;">';
+                html += '<h4 style="color: #ffa500; margin-bottom: 10px;">📥 Open Reports (${openReports.length}):</h4>';
+                openReports.forEach((report, index) => {
+                    const date = new Date(report.timestamp).toLocaleString();
+                    html += `
+                        <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.5); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <p style="color: #aaa; font-size: 0.85em;">
+                                    <strong style="color: #ffa500;">#${bugReports.length - index}</strong> | 
+                                    Reported by: <strong>${report.reportedBy}</strong>
+                                </p>
+                                <p style="color: #888; font-size: 0.8em;">${date}</p>
+                            </div>
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0;">
+                                <p style="color: #fff;"><strong>Description:</strong></p>
+                                <p style="color: #ddd; margin-top: 5px;">${report.description}</p>
+                            </div>
+                            ${report.steps ? `
+                                <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0;">
+                                    <p style="color: #fff;"><strong>Steps to Reproduce:</strong></p>
+                                    <p style="color: #ddd; margin-top: 5px; white-space: pre-wrap;">${report.steps}</p>
+                                </div>
+                            ` : ''}
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button onclick="closeBugReport_admin('${report.id}')" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); flex: 1;">
+                                    ✓ Mark as Resolved
+                                </button>
+                                <button onclick="deleteBugReport('${report.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 10px 20px;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            if (closedReports.length > 0) {
+                html += `
+                    <details style="margin-top: 20px;">
+                        <summary style="color: #4ecdc4; cursor: pointer; margin-bottom: 10px; font-size: 1.1em; padding: 10px; background: rgba(78, 205, 196, 0.1); border-radius: 5px;">
+                            ✓ Resolved Reports (${closedReports.length})
+                        </summary>
+                        <div style="margin-top: 10px;">
+                `;
+                closedReports.forEach((report, index) => {
+                    const date = new Date(report.timestamp).toLocaleString();
+                    html += `
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 5px; margin-bottom: 8px; opacity: 0.7; border-left: 3px solid #4ecdc4;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <p style="color: #aaa; font-size: 0.85em;">
+                                    <strong style="color: #4ecdc4;">#${bugReports.length - bugReports.indexOf(report)}</strong> | 
+                                    ${report.reportedBy} - ${date}
+                                </p>
+                                <button onclick="deleteBugReport('${report.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 6px 12px; font-size: 0.85em;">
+                                    🗑️
+                                </button>
+                            </div>
+                            <p style="color: #ccc; font-size: 0.9em;">${report.description}</p>
+                            ${report.steps ? `<p style="color: #888; font-size: 0.85em; margin-top: 5px; font-style: italic;">Steps: ${report.steps.substring(0, 100)}${report.steps.length > 100 ? '...' : ''}</p>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div></details>';
+            }
+
+            return html;
+        }
+
+        async function closeBugReport_admin(reportId) {
+            const report = bugReports.find(r => r.id === reportId);
+            if (report) {
+                report.status = 'closed';
+                await saveData();
+                renderAdminPanel();
+                showStatus('adminStatus', 'Bug report marked as resolved!', 'success');
+            }
+        }
+
+        async function deleteBugReport(reportId) {
+            if (!confirm('Delete this bug report permanently?')) return;
+            
+            bugReports = bugReports.filter(r => r.id !== reportId);
             await saveData();
             renderAdminPanel();
+            showStatus('adminStatus', 'Bug report deleted!', 'success');
+        }
+
+        async function clearAllBugReports() {
+            const confirmed = confirm(
+                `⚠️ WARNING ⚠️\n\nThis will permanently delete ALL ${bugReports.length} bug reports (both open and closed).\n\nThis action cannot be undone!\n\nAre you sure?`
+            );
+            
+            if (!confirmed) return;
+            
+            const doubleCheck = confirm(
+                `Really clear all ${bugReports.length} reports?\n\nLast chance to cancel!`
+            );
+            
+            if (!doubleCheck) return;
+            
+            bugReports = [];
+            await saveData();
+            renderAdminPanel();
+            showStatus('adminStatus', 'All bug reports cleared!', 'success');
         }
 
         // ===== INITIALIZATION =====
         loadConfig();
         updateTagline();
+        
+        // Auto-save any pending changes when user leaves
+        window.addEventListener('beforeunload', () => {
+            if (pendingSave) {
+                saveDataNow();
+            }
+        });
     </script>
 </body>
 </html>
