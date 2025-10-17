@@ -1577,50 +1577,47 @@
             if (config.gistId) loadData();
         }
 
-       async function register() {
+      async function register() {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value;
 
   if (!username || !password) {
-    showStatus('loginStatus', 'Enter username and password!', 'error');
-    return;
+    showStatus('loginStatus', 'Enter username and password!', 'error'); return;
   }
-  if (username.length < 3) {
-    showStatus('loginStatus', 'Username must be 3+ characters', 'error');
-    return;
-  }
-  if (password.length < 4) {
-    showStatus('loginStatus', 'Password must be 4+ characters', 'error');
-    return;
-  }
+  if (username.length < 3) { showStatus('loginStatus', 'Username must be 3+ characters', 'error'); return; }
+  if (password.length < 4) { showStatus('loginStatus', 'Password must be 4+ characters', 'error'); return; }
 
   const confirmed = confirm(
-    '⚠️ SECURITY WARNING ⚠️\n\n' +
-    'Your password will be hashed and stored in a GitHub Gist.\n\n' +
-    'DO NOT use a password you use for any other account!\n\n' +
-    'Only use a simple, unique password for this game.\n\n' +
-    'Click OK to confirm you understand and want to register.'
+    '⚠️ SECURITY WARNING ⚠️\n\nYour password will be stored in a GitHub Gist.\nUse a simple, unique password only.'
   );
   if (!confirmed) return;
 
-  // 1) Pull the latest data from the Gist to avoid overwriting others' changes
-  let latest = null;
-  if (config.githubToken && config.gistId) {
-    try {
-      const resp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
-        headers: {
-          'Authorization': `token ${config.githubToken}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      if (resp.ok) {
-        const gist = await resp.json();
-        latest = JSON.parse(gist.files['spider-league.json'].content);
-      }
-    } catch (e) {
-      console.warn('Could not fetch latest Gist before registering user. Proceeding with local state.', e);
-    }
+  // Always re-fetch latest before deciding if a username exists
+  const okBeforeSave = await saveData(); // pulls latest + merges in-memory
+  if (!okBeforeSave) { showStatus('loginStatus', 'Could not sync with server. Try again.', 'error'); return; }
+
+  if ((users || []).some(u => u.username === username)) {
+    showStatus('loginStatus', 'Username already taken!', 'error'); return;
   }
+
+  users.push({
+    username,
+    password, // consider hashing later
+    coins: 100,
+    inventory: {},
+    createdAt: new Date().toISOString()
+  });
+
+  const ok = await saveData();
+  if (!ok) {
+    showStatus('loginStatus', 'Could not save account. Try again.', 'error'); return;
+  }
+
+  currentUser = username;
+  window.localStorage.setItem('spiderUser', username);
+  showUserInfo();
+  showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
+}
 
   // 2) Merge: prefer latest-from-Gist where available to minimize clobbering
   const merged = {
@@ -1764,85 +1761,140 @@
             }, 2000);
         }
 
-        async function saveData() {
-            if (saveTimeout) {
-                clearTimeout(saveTimeout);
-            }
-            return await saveDataNow();
+       // --- helpers ---
+function unionByKey(a = [], b = [], key = 'id') {
+  const map = new Map();
+  for (const item of a) map.set(item[key], item);
+  for (const item of b) map.set(item[key], item);
+  return Array.from(map.values());
+}
+function uniqueUsers(latestUsers = [], localUsers = []) {
+  // Use username as stable key
+  return unionByKey(latestUsers, localUsers, 'username');
+}
+
+// --- main save functions ---
+let __saving = false;
+
+async function saveData() {
+  // Prevent overlapping saves that can step on each other
+  while (__saving) await new Promise(r => setTimeout(r, 50));
+  __saving = true;
+  try {
+    if (!config.githubToken) {
+      console.warn('No GitHub token configured; skipping remote save.');
+      return true;
+    }
+
+    // If no Gist yet, create one with current local state (first-time setup)
+    if (!config.gistId) {
+      const initial = {
+        spiders, users, shopPrices, moveList: MOVE_LIST, taglines,
+        tradeOffers, bugReports, activeBattles, dailyHats, hatInventory
+      };
+      const createResp = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${config.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          description: 'Spider League data',
+          public: false,
+          files: {
+            'spider-league.json': { content: JSON.stringify(initial, null, 2) }
+          }
+        })
+      });
+      if (!createResp.ok) {
+        console.error('Failed to create Gist', await createResp.text());
+        return false;
+      }
+      const created = await createResp.json();
+      config.gistId = created.id;
+      window.localStorage.setItem('spiderConfig', JSON.stringify(config));
+      return true;
+    }
+
+    // Fetch latest to avoid clobber
+    const resp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
+      headers: {
+        'Authorization': `token ${config.githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (!resp.ok) {
+      console.error('Failed to fetch latest Gist before save', await resp.text());
+      return false;
+    }
+
+    const gist = await resp.json();
+    const latestContent = gist.files?.['spider-league.json']?.content;
+    let latest = {};
+    try { latest = latestContent ? JSON.parse(latestContent) : {}; } catch (e) { latest = {}; }
+
+    // --- merge strategy ---
+    // Users MUST be merged (that’s your current pain point)
+    const mergedUsers = uniqueUsers(latest.users || [], users || []);
+
+    // For everything else, you can choose:
+    // - prefer latest if you didn’t change it locally
+    // - or prefer local. Below keeps the latest as base and overlays local where it exists.
+    const merged = {
+      spiders: Array.isArray(latest.spiders) ? latest.spiders : [],
+      users: mergedUsers,
+      shopPrices: { ...(latest.shopPrices || {}), ...(shopPrices || {}) },
+      moveList: Array.isArray(MOVE_LIST) ? MOVE_LIST : (latest.moveList || []),
+      taglines: Array.isArray(taglines) ? taglines : (latest.taglines || []),
+      tradeOffers: Array.isArray(latest.tradeOffers) ? latest.tradeOffers : [],
+      bugReports: Array.isArray(latest.bugReports) ? latest.bugReports : [],
+      activeBattles: Array.isArray(latest.activeBattles) ? latest.activeBattles : [],
+      dailyHats: Array.isArray(latest.dailyHats) ? latest.dailyHats : [],
+      hatInventory: Array.isArray(latest.hatInventory) ? latest.hatInventory : []
+    };
+
+    // Update local memory to match what we’re about to write (stay consistent)
+    spiders = merged.spiders;
+    users = merged.users;
+    shopPrices = merged.shopPrices;
+    MOVE_LIST = merged.moveList;
+    taglines = merged.taglines;
+    tradeOffers = merged.tradeOffers;
+    bugReports = merged.bugReports;
+    activeBattles = merged.activeBattles;
+    dailyHats = merged.dailyHats;
+    hatInventory = merged.hatInventory;
+
+    // Patch back to the Gist
+    const patchResp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${config.githubToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        files: {
+          'spider-league.json': { content: JSON.stringify(merged, null, 2) }
         }
+      })
+    });
 
-        async function saveDataNow() {
-            if (!config.githubToken) {
-                console.error('No GitHub token configured');
-                return false;
-            }
+    if (!patchResp.ok) {
+      console.error('Failed to patch Gist', await patchResp.text());
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('saveData error', e);
+    return false;
+  } finally {
+    __saving = false;
+  }
+}
 
-            const data = { 
-                spiders, 
-                users, 
-                shopPrices, 
-                moveList: MOVE_LIST, 
-                taglines, 
-                tradeOffers, 
-                bugReports, 
-                activeBattles, 
-                dailyHats, 
-                hatInventory 
-            };
-
-            try {
-                if (!config.gistId) {
-                    const response = await fetch('https://api.github.com/gists', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${config.githubToken}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            description: 'Spider League Data',
-                            public: false,
-                            files: {
-                                'spider-league.json': {
-                                    content: JSON.stringify(data, null, 2)
-                                }
-                            }
-                        })
-                    });
-
-                    if (!response.ok) return false;
-
-                    const result = await response.json();
-                    config.gistId = result.id;
-                    document.getElementById('gistId').value = config.gistId;
-                    window.localStorage.setItem('spiderConfig', JSON.stringify(config));
-                    alert(`Gist created! ID: ${config.gistId}\n\nShare this with friends!`);
-                } else {
-                    const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `token ${config.githubToken}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            files: {
-                                'spider-league.json': {
-                                    content: JSON.stringify(data, null, 2)
-                                }
-                            }
-                        })
-                    });
-
-                    if (!response.ok) return false;
-                }
-
-                return true;
-            } catch (error) {
-                console.error('Save error:', error);
-                return false;
-            }
-        }
+// If you call saveDataNow() anywhere, forward to saveData()
+async function saveDataNow() { return saveData(); }
 
         async function addSpider() {
             if (!currentUser) {
