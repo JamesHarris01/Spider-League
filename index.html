@@ -2338,43 +2338,39 @@
             }
         });
     </script>
-	<script>
-// ===== BATTLE SYSTEM (toughness-based, integrated) =====
+<script>
+// ===== BATTLE SYSTEM (toughness + effects + XP + WAGERS) =====
 
-// Assumes these globals already exist in index(1).html:
-// MOVE_LIST, spiders, users, currentUser, battleState, selectedBattleSpider,
-// activeBattles, saveData (or saveDataNow), getSpiderWithHatStats()
+// Globals expected to already exist elsewhere in your app:
+// spiders, users, currentUser, activeBattles (Array), MOVE_LIST (Array of moves),
+// saveData() or saveDataNow(), updateCoins(), getSpiderWithHatStats(spider)
+// DOM ids: battleSelectSpiders, battleOpponents, battleSelectPhase, battleOpponentPhase, battleArenaPhase, battleTabBtn
 
-// ---------- helpers ----------
-function isSpiderInBattle(spiderId) {
-  return activeBattles.some(b =>
-    b.playerSpiderId === spiderId || b.enemySpiderId === spiderId
-  );
-}
-
-// Prefer persisted save method if present
+// ---------- persistence helper ----------
 const _save = typeof saveData === 'function' ? saveData
-            : (typeof saveDataNow === 'function' ? saveDataNow
-            : async () => true);
+            : (typeof saveDataNow === 'function' ? saveDataNow : async () => true);
 
-// Fallback move generator if a spider somehow lacks moves
+// ---------- misc helpers ----------
+function isSpiderInBattle(spiderId) {
+  return activeBattles.some(b => b.playerSpiderId === spiderId || b.enemySpiderId === spiderId);
+}
 function ensureMoves(spider) {
   if (spider.moves && spider.moves.length) return spider.moves;
-  // pick 4 from MOVE_LIST, compute lightweight power for display
   const picks = (MOVE_LIST || []).slice(0, 4).map(m => ({
     name: m.name, stat: m.stat, basePower: m.basePower, effect: m.effect || null
   }));
   spider.moves = picks;
   return spider.moves;
 }
-
-// A simple derived "power" for UI (avg core stats)
+function getUserByName(name) {
+  return users.find(u => u.username === name);
+}
 function derivedPower(s) {
   const stats = getSpiderWithHatStats ? getSpiderWithHatStats(s) : s;
   return Math.round((stats.strength + stats.speed + stats.size + stats.venom) / 4);
 }
 
-// ---------- SELECT YOUR SPIDER ----------
+// ---------- UI: select your spider ----------
 function renderBattleSelect() {
   const grid = document.getElementById('battleSelectSpiders');
 
@@ -2383,9 +2379,7 @@ function renderBattleSelect() {
     return;
   }
 
-  const mySpiders = spiders.filter(
-    s => s.owner === currentUser && s.verified && s.toughness > 0
-  );
+  const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.toughness > 0);
 
   if (mySpiders.length === 0) {
     grid.innerHTML = '<p style="color:#666;">You have no healthy, verified spiders. Create one, ask an admin to approve yours, or revive a fainted one.</p>';
@@ -2405,7 +2399,7 @@ function renderBattleSelect() {
         ${spider.latinName ? `<div style="font-style:italic;color:#aaa;font-size:0.9em;margin-bottom:8px;">${spider.latinName}</div>` : ''}
         <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
         <div class="hp-bar">
-          <div class="hp-fill ${stats.toughness < stats.maxToughness*0.3 ? 'low':''}"
+          <div class="hp-fill ${(stats.toughness / stats.maxToughness)<0.3 ? 'low':''}"
                style="width:${(stats.toughness / stats.maxToughness) * 100}%">
             Toughness: ${stats.toughness}/${stats.maxToughness}
           </div>
@@ -2420,13 +2414,11 @@ function renderBattleSelect() {
 function selectBattleSpider(spiderId) {
   const spider = spiders.find(s => s.id === spiderId);
   if (!spider) return;
-
   if (isSpiderInBattle(spiderId)) {
     alert('This spider is already in a battle!');
     return;
   }
-
-  selectedBattleSpider = spider;
+  window.selectedBattleSpider = spider;
   ensureMoves(selectedBattleSpider);
 
   document.getElementById('battleSelectPhase').classList.add('hidden');
@@ -2434,8 +2426,41 @@ function selectBattleSpider(spiderId) {
   renderOpponents();
 }
 
-// ---------- PICK OPPONENT ----------
+// ---------- Wager UI helper ----------
+function ensureWagerUI() {
+  const phase = document.getElementById('battleOpponentPhase');
+  if (!phase) return;
+  if (!document.getElementById('wagerBox')) {
+    const box = document.createElement('div');
+    box.id = 'wagerBox';
+    box.style.margin = '0 0 12px 0';
+    box.style.display = 'grid';
+    box.style.gridTemplateColumns = '1fr auto';
+    box.style.gap = '10px';
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.08);padding:10px;border-radius:10px;">
+        <label for="battleWager" style="color:#aaa;">Wager (coins):</label>
+        <input id="battleWager" type="number" min="0" step="1" value="${Number(localStorage.getItem('lastWager')||0)}"
+               style="max-width:140px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.1);border:none;color:#fff;">
+        <span id="wagerMyCoins" style="color:#ffd700;font-weight:bold;margin-left:auto;">💰 ${getUserByName(currentUser)?.coins || 0}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;">
+        <small style="color:#aaa;">Both players must have at least this amount.</small>
+      </div>
+    `;
+    const opponentsGrid = document.getElementById('battleOpponents');
+    phase.insertBefore(box, opponentsGrid);
+  } else {
+    // refresh coins display
+    const span = document.getElementById('wagerMyCoins');
+    if (span) span.textContent = `💰 ${getUserByName(currentUser)?.coins || 0}`;
+  }
+}
+
+// ---------- UI: pick opponent (with wager box) ----------
 function renderOpponents() {
+  ensureWagerUI();
+
   const grid = document.getElementById('battleOpponents');
   const opponents = spiders.filter(s => s.verified && s.owner !== currentUser && s.toughness > 0);
 
@@ -2446,37 +2471,210 @@ function renderOpponents() {
 
   grid.innerHTML = opponents.map(spider => {
     const stats = getSpiderWithHatStats ? getSpiderWithHatStats(spider) : spider;
+    const enemyCoins = getUserByName(spider.owner)?.coins ?? 0;
     return `
       <div class="spider-card">
         <img src="${spider.image}" class="spider-image" alt="${spider.name}">
         <div class="spider-name">${spider.name}</div>
+        <div class="stat"><span>Owner:</span><span>@${spider.owner} • 💰 ${enemyCoins}</span></div>
         <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
         <div class="hp-bar">
-          <div class="hp-fill ${stats.toughness < stats.maxToughness*0.3 ? 'low':''}"
+          <div class="hp-fill ${(stats.toughness / stats.maxToughness)<0.3 ? 'low':''}"
                style="width:${(stats.toughness / stats.maxToughness) * 100}%">
             Toughness: ${stats.toughness}/${stats.maxToughness}
           </div>
         </div>
         <div class="stat"><span>Power:</span><span>${derivedPower(spider)}</span></div>
-        <button onclick="startBattle(${selectedBattleSpider.id}, ${spider.id})">Challenge!</button>
+        <button onclick="startBattle(${selectedBattleSpider.id}, ${spider.id}, Number(document.getElementById('battleWager').value||0))">Challenge!</button>
       </div>
     `;
   }).join('');
 }
 
-// ---------- START BATTLE ----------
-async function startBattle(playerId, enemyId) {
+// ---------- status effects engine ----------
+/*
+  Effects stored as { type, turns, magnitude?, meta? }:
+  - poison: start of owner's turn, lose floor(maxToughness * magnitude) (default 0.05)
+  - burn:   start of owner's turn, lose floor(maxToughness * magnitude) (default 0.04), outgoing ×0.8
+  - bleed:  start of owner's turn, lose floor(lastDamageTaken * magnitude) (default 0.25)
+  - slow:   outgoing ×0.8 (no DoT)
+  - stun:   skip the entire turn once (consumes 1 turn immediately when applied at start)
+  - charge: next attack ×1.5 (consumed on hit)
+*/
+const EFFECT_DEFAULTS = {
+  poison: { magnitude: 0.05 },
+  burn:   { magnitude: 0.04 },
+  bleed:  { magnitude: 0.25 },
+  slow:   { magnitude: 0.20 },
+  charge: { magnitude: 0.50 }
+};
+function addEffect(side, eff) {
+  const list = battleState.effects[side];
+  const copy = { ...eff };
+  if (copy.magnitude == null && EFFECT_DEFAULTS[copy.type]?.magnitude != null) {
+    copy.magnitude = EFFECT_DEFAULTS[copy.type].magnitude;
+  }
+  list.push(copy);
+}
+function purgeExpired(side) {
+  battleState.effects[side] = battleState.effects[side].filter(e => e.turns > 0);
+}
+function applyStartOfTurn(side) {
+  const actor = battleState[side];
+  const spider = actor.spider;
+  const effects = battleState.effects[side];
+
+  // stun
+  const stun = effects.find(e => e.type === 'stun');
+  if (stun) {
+    stun.turns -= 1;
+    battleState.log.push(`${spider.name} is stunned and cannot move!`);
+    purgeExpired(side);
+    return { stunned: true };
+  }
+
+  // DoT ticks
+  let totalDot = 0;
+  for (const e of effects) {
+    if (e.type === 'poison' || e.type === 'burn') {
+      const dot = Math.max(1, Math.floor(spider.maxToughness * e.magnitude));
+      actor.currentToughness = Math.max(0, actor.currentToughness - dot);
+      totalDot += dot;
+    } else if (e.type === 'bleed' && e.meta?.lastDamageTaken) {
+      const dot = Math.max(1, Math.floor(e.meta.lastDamageTaken * e.magnitude));
+      actor.currentToughness = Math.max(0, actor.currentToughness - dot);
+      totalDot += dot;
+    }
+  }
+  if (totalDot > 0) battleState.log.push(`${spider.name} suffers ${totalDot} damage from effects.`);
+
+  // decrement durations (stun already decremented)
+  for (const e of effects) { if (e.type !== 'stun') e.turns -= 1; }
+  purgeExpired(side);
+
+  return { stunned: false };
+}
+function outgoingDamageMultiplier(side) {
+  const effects = battleState.effects[side];
+  let mult = 1;
+  if (effects.some(e => e.type === 'burn')) mult *= 0.8;
+  if (effects.some(e => e.type === 'slow')) mult *= 0.8;
+  return mult;
+}
+function consumeCharge(side) {
+  const idx = battleState.effects[side].findIndex(e => e.type === 'charge');
+  if (idx >= 0) {
+    battleState.effects[side].splice(idx, 1);
+    return 1 + EFFECT_DEFAULTS.charge.magnitude; // 1.5
+  }
+  return 1;
+}
+function maybeInflictEffect(targetSide, targetSpider, move, lastDamage) {
+  if (!move.effect || !move.effect.type) return;
+
+  // support legacy effect structures
+  const effBlock = move.effect;
+  const type = effBlock.type;
+  if (!type) return;
+
+  // chance: prefer .chance, else default to 1; legacy damage/magnitude mapping
+  const chance = effBlock.chance != null ? effBlock.chance : 1;
+  if (Math.random() > chance) return;
+
+  // normalize common legacy shapes
+  let magnitude = effBlock.magnitude;
+  if (magnitude == null) {
+    if (type === 'poison' || type === 'burn') {
+      // legacy used fixed damage; convert approx. to fraction of max
+      if (effBlock.damage != null) magnitude = Math.max(0.01, effBlock.damage / 100);
+      else magnitude = EFFECT_DEFAULTS[type].magnitude;
+    }
+  }
+  const turns = effBlock.turns != null ? effBlock.turns : 2;
+
+  const eff = { type, turns, magnitude };
+  if (type === 'bleed') eff.meta = { lastDamageTaken: lastDamage };
+  addEffect(targetSide, eff);
+
+  battleState.log.push(`${targetSpider.name} is ${effectLabel(type)}!`);
+}
+function effectLabel(type) {
+  return ({
+    poison: 'poisoned',
+    burn: 'burned',
+    bleed: 'bleeding',
+    slow: 'slowed',
+    stun: 'stunned',
+    charge: 'charging'
+  })[type] || type;
+}
+
+// ---------- XP / Leveling ----------
+function grantBattleXP(winner, loser) {
+  const pwrW = derivedPower(winner), pwrL = derivedPower(loser);
+  const levelDelta = Math.max(0, loser.level - winner.level);
+  const base = 15 + Math.round((pwrL / Math.max(1, pwrW)) * 10) + levelDelta * 5;
+  const xpGain = Math.max(10, Math.min(120, base));
+  winner.xp = (winner.xp || 0) + xpGain;
+
+  let leveled = false;
+  while ((winner.xp || 0) >= xpNeededForLevel(winner.level)) {
+    winner.xp -= xpNeededForLevel(winner.level);
+    levelUp(winner);
+    leveled = true;
+  }
+  return { xpGain, leveled };
+}
+function xpNeededForLevel(level) { return 50 * level; }
+function levelUp(spider) {
+  spider.level = (spider.level || 1) + 1;
+  const inc = () => 1 + Math.floor(Math.random() * 2); // +1..+2
+  spider.strength += inc();
+  spider.speed += inc();
+  spider.size += 1;
+  spider.venom += inc();
+  const bonusT = 5 + Math.floor(Math.random() * 4); // +5..+8
+  spider.maxToughness += bonusT;
+  spider.toughness = spider.maxToughness;
+}
+
+// ---------- start battle (validates wager) ----------
+async function startBattle(playerId, enemyId, wager = 0) {
   const playerSpider = spiders.find(s => s.id === playerId);
   const enemySpider  = spiders.find(s => s.id === enemyId);
   if (!playerSpider || !enemySpider) return;
 
+  // sanitize wager
+  wager = Math.max(0, Math.floor(Number(wager) || 0));
+  localStorage.setItem('lastWager', String(wager));
+
+  // validate coins for both players
+  const playerUser = getUserByName(currentUser);
+  const enemyUser  = getUserByName(enemySpider.owner);
+  if (!playerUser || !enemyUser) {
+    alert('Could not find player accounts.');
+    return;
+  }
+  if (playerUser.coins == null) playerUser.coins = 0;
+  if (enemyUser.coins == null) enemyUser.coins = 0;
+
+  if (wager > 0) {
+    if (playerUser.coins < wager) {
+      alert(`You don't have enough coins for this wager. You need ${wager} coins.`);
+      return;
+    }
+    if (enemyUser.coins < wager) {
+      alert(`Opponent @${enemyUser.username} doesn't have enough coins for this wager.`);
+      return;
+    }
+  }
+
   ensureMoves(playerSpider);
   ensureMoves(enemySpider);
 
-  // Create battle record (also used to gray out busy spiders)
   activeBattles.push({ playerSpiderId: playerSpider.id, enemySpiderId: enemySpider.id });
 
-  battleState = {
+  window.battleState = {
     turn: 'player',
     player: {
       spider: JSON.parse(JSON.stringify(playerSpider)),
@@ -2488,7 +2686,7 @@ async function startBattle(playerId, enemyId) {
     },
     log: [],
     effects: { player: [], enemy: [] },
-    wager: 0
+    wager
   };
 
   updateBattleTabIndicator();
@@ -2499,24 +2697,51 @@ async function startBattle(playerId, enemyId) {
   document.getElementById('battleArenaPhase').classList.remove('hidden');
 }
 
-// ---------- CORE BATTLE LOOP ----------
+// ---------- damage model ----------
+function moveBaseDamage(attacker, defender, move, sideKey) {
+  const aStats = getSpiderWithHatStats ? getSpiderWithHatStats(attacker) : attacker;
+  const dStats = getSpiderWithHatStats ? getSpiderWithHatStats(defender) : defender;
+
+  const atk = aStats[move.stat] || 1;
+  const def = Math.max(1, Math.round((dStats.size + dStats.toughness) / 2));
+  const crit = Math.random() < 0.1 ? 1.5 : 1.0;
+  const variance = 0.85 + Math.random() * 0.3;
+
+  let base = (move.basePower || 1) * 6; // scale for punchiness
+  let mult = outgoingDamageMultiplier(sideKey) * consumeCharge(sideKey);
+
+  const raw = Math.round(((atk / def) * base) * crit * variance * mult);
+  return { dmg: Math.max(1, raw), crit: crit > 1.0, multUsed: mult };
+}
+
+// ---------- arena render ----------
 function renderBattle() {
   const arena = document.getElementById('battleArenaPhase');
   if (!battleState) return;
 
   const p = battleState.player.spider;
   const e = battleState.enemy.spider;
-
   const pPow = derivedPower(p), ePow = derivedPower(e);
+
+  // Wager ribbon (if any)
+  const wagerRibbon = battleState.wager > 0
+    ? `<div style="text-align:center;margin-bottom:8px;">
+         <span style="background:linear-gradient(135deg,#ffd700,#ffed4e);color:#000;padding:6px 12px;border-radius:999px;font-weight:bold;">
+           💰 Wager: ${battleState.wager} coins
+         </span>
+       </div>`
+    : '';
 
   arena.innerHTML = `
     <div class="arena-wrap">
       <button onclick="backToBattleSelect()">← Back</button>
+      ${wagerRibbon}
       <h3 style="margin:10px 0 20px;">Battle</h3>
       <div class="arena-sides" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="spider-card">
           <img src="${p.image}" class="spider-image" alt="${p.name}">
           <div class="spider-name">${p.name}</div>
+          <div class="stat"><span>Owner:</span><span>@${battleState.player.spider.owner || currentUser}</span></div>
           <div class="stat"><span>Level:</span><span>${p.level}</span></div>
           <div class="hp-bar"><div class="hp-fill ${(battleState.player.currentToughness/p.maxToughness)<0.3?'low':''}" style="width:${(battleState.player.currentToughness / p.maxToughness) * 100}%">Toughness: ${battleState.player.currentToughness}/${p.maxToughness}</div></div>
           <div class="stat"><span>Power:</span><span>${pPow}</span></div>
@@ -2531,6 +2756,7 @@ function renderBattle() {
         <div class="spider-card">
           <img src="${e.image}" class="spider-image" alt="${e.name}">
           <div class="spider-name">${e.name}</div>
+          <div class="stat"><span>Owner:</span><span>@${e.owner}</span></div>
           <div class="stat"><span>Level:</span><span>${e.level}</span></div>
           <div class="hp-bar"><div class="hp-fill ${(battleState.enemy.currentToughness/e.maxToughness)<0.3?'low':''}" style="width:${(battleState.enemy.currentToughness / e.maxToughness) * 100}%">Toughness: ${battleState.enemy.currentToughness}/${e.maxToughness}</div></div>
           <div class="stat"><span>Power:</span><span>${ePow}</span></div>
@@ -2544,39 +2770,24 @@ function renderBattle() {
   `;
 }
 
-function moveBaseDamage(attacker, defender, move) {
-  // Scale basePower (your new index file uses small numbers like 3/6/8…) so fights feel punchy. :contentReference[oaicite:4]{index=4}
-  const stats = getSpiderWithHatStats ? getSpiderWithHatStats(attacker) : attacker;
-  const atk = stats[move.stat] || 1;
-  const defStats = getSpiderWithHatStats ? getSpiderWithHatStats(defender) : defender;
-  const def = Math.max(1, Math.round((defStats.size + defStats.toughness) / 2));
-
-  const crit = Math.random() < 0.1 ? 1.5 : 1.0;
-  const variance = 0.85 + Math.random() * 0.3;
-  const scaledBase = (move.basePower || 1) * 6; // small → meaningful
-  const raw = Math.round(((atk / def) * scaledBase) * crit * variance);
-
-  return { dmg: Math.max(1, raw), crit: crit > 1.0 };
-}
-
+// ---------- player/enemy turns ----------
 async function playerUseMove(idx) {
   if (!battleState || battleState.turn !== 'player') return;
+
+  const start = applyStartOfTurn('player');
+  if (battleState.player.currentToughness <= 0) { await endBattle(false); return; }
+  if (start.stunned) { battleState.turn = 'enemy'; renderBattle(); return setTimeout(enemyTurn, 600); }
+
   const p = battleState.player.spider;
   const e = battleState.enemy.spider;
   const move = ensureMoves(p)[idx];
 
-  const { dmg, crit } = moveBaseDamage(p, e, move);
-  battleState.enemy.currentToughness = Math.max(0, battleState.enemy.currentToughness - dmg);
-  battleState.log.push(`${p.name} used ${move.name}! ${crit ? '✨ Critical! ' : ''}It dealt ${dmg} damage.`);
+  const res = moveBaseDamage(p, e, move, 'player');
+  battleState.enemy.currentToughness = Math.max(0, battleState.enemy.currentToughness - res.dmg);
+  battleState.log.push(`${p.name} used ${move.name}! ${res.multUsed>1 ? '🔋 Charged! ' : ''}${res.crit ? '✨ Critical! ' : ''}It dealt ${res.dmg} damage.`);
+  maybeInflictEffect('enemy', e, move, res.dmg);
 
-  // effects (subset you already use in your data: recoil/slow)
-  if (move.effect && move.effect.type === 'recoil') {
-    const recoil = Math.max(1, Math.round(dmg * (move.effect.percent || 0.2)));
-    battleState.player.currentToughness = Math.max(0, battleState.player.currentToughness - recoil);
-    battleState.log.push(`${p.name} was hurt by recoil (${recoil}).`);
-  }
   if (await checkBattleEnd()) return;
-
   battleState.turn = 'enemy';
   renderBattle();
   setTimeout(enemyTurn, 800);
@@ -2584,6 +2795,11 @@ async function playerUseMove(idx) {
 
 function enemyTurn() {
   if (!battleState || battleState.turn !== 'enemy') return;
+
+  const start = applyStartOfTurn('enemy');
+  if (battleState.enemy.currentToughness <= 0) { endBattle(true); return; }
+  if (start.stunned) { battleState.turn = 'player'; return renderBattle(); }
+
   const e = battleState.enemy.spider;
   const p = battleState.player.spider;
 
@@ -2591,22 +2807,17 @@ function enemyTurn() {
   const idx = Math.floor(Math.random() * moves.length);
   const move = moves[idx];
 
-  const { dmg, crit } = moveBaseDamage(e, p, move);
-  battleState.player.currentToughness = Math.max(0, battleState.player.currentToughness - dmg);
-  battleState.log.push(`${e.name} used ${move.name}! ${crit ? '✨ Critical! ' : ''}It dealt ${dmg} damage.`);
-
-  if (move.effect && move.effect.type === 'recoil') {
-    const recoil = Math.max(1, Math.round(dmg * (move.effect.percent || 0.2)));
-    battleState.enemy.currentToughness = Math.max(0, battleState.enemy.currentToughness - recoil);
-    battleState.log.push(`${e.name} was hurt by recoil (${recoil}).`);
-  }
+  const res = moveBaseDamage(e, p, move, 'enemy');
+  battleState.player.currentToughness = Math.max(0, battleState.player.currentToughness - res.dmg);
+  battleState.log.push(`${e.name} used ${move.name}! ${res.multUsed>1 ? '🔋 Charged! ' : ''}${res.crit ? '✨ Critical! ' : ''}It dealt ${res.dmg} damage.`);
+  maybeInflictEffect('player', p, move, res.dmg);
 
   if (checkBattleEndSync()) return;
-
   battleState.turn = 'player';
   renderBattle();
 }
 
+// ---------- end checks ----------
 async function checkBattleEnd() {
   if (battleState.enemy.currentToughness <= 0) {
     await endBattle(true);
@@ -2625,58 +2836,77 @@ function checkBattleEndSync() {
   return false;
 }
 
-// ---------- FINISH / FORFEIT ----------
+// ---------- finish / forfeit (coin transfer if wager > 0) ----------
 async function endBattle(playerWon) {
   if (!battleState) return;
 
-  const playerSpider = spiders.find(s => s.id === battleState.player.spider.id);
-  const enemySpider  = spiders.find(s => s.id === battleState.enemy.spider.id);
+  const playerLive = spiders.find(s => s.id === battleState.player.spider.id);
+  const enemyLive  = spiders.find(s => s.id === battleState.enemy.spider.id);
 
-  // persist post-battle toughness to collection
-  playerSpider.toughness = Math.max(0, battleState.player.currentToughness);
-  enemySpider.toughness  = Math.max(0, battleState.enemy.currentToughness);
+  // persist toughness back
+  playerLive.toughness = Math.max(0, battleState.player.currentToughness);
+  enemyLive.toughness  = Math.max(0, battleState.enemy.currentToughness);
 
+  // wins / losses + XP
   if (playerWon) {
-    playerSpider.wins = (playerSpider.wins || 0) + 1;
-    enemySpider.losses = (enemySpider.losses || 0) + 1;
-    battleState.log.push(`${enemySpider.name} fainted!`);
+    playerLive.wins = (playerLive.wins || 0) + 1;
+    enemyLive.losses = (enemyLive.losses || 0) + 1;
+    const { xpGain, leveled } = grantBattleXP(playerLive, enemyLive);
+    battleState.log.push(`${enemyLive.name} fainted! You gained ${xpGain} XP${leveled ? ' and leveled up!' : ''}.`);
   } else {
-    enemySpider.wins = (enemySpider.wins || 0) + 1;
-    playerSpider.losses = (playerSpider.losses || 0) + 1;
-    battleState.log.push(`${playerSpider.name} fainted!`);
+    enemyLive.wins = (enemyLive.wins || 0) + 1;
+    playerLive.losses = (playerLive.losses || 0) + 1;
+    const { xpGain, leveled } = grantBattleXP(enemyLive, playerLive);
+    battleState.log.push(`${playerLive.name} fainted! Opponent gained ${xpGain} XP${leveled ? ' and leveled up!' : ''}.`);
   }
 
-  // free the slot
+  // coin transfer (wager)
+  const wager = battleState.wager || 0;
+  if (wager > 0) {
+    const pUser = getUserByName(currentUser);
+    const eUser = getUserByName(enemyLive.owner);
+
+    if (playerWon) {
+      if (eUser) eUser.coins = Math.max(0, (eUser.coins || 0) - wager);
+      if (pUser) pUser.coins = (pUser.coins || 0) + wager;
+      battleState.log.push(`💰 You won the wager and receive ${wager} coins from @${eUser?.username || 'opponent'}!`);
+    } else {
+      if (pUser) pUser.coins = Math.max(0, (pUser.coins || 0) - wager);
+      if (eUser) eUser.coins = (eUser.coins || 0) + wager;
+      battleState.log.push(`💰 You lost the wager; @${eUser?.username || 'opponent'} receives ${wager} coins.`);
+    }
+  }
+
+  // free slot
   activeBattles = activeBattles.filter(b =>
-    b.playerSpiderId !== playerSpider.id && b.enemySpiderId !== enemySpider.id
+    b.playerSpiderId !== playerLive.id && b.enemySpiderId !== enemyLive.id
   );
 
   await _save();
+  if (typeof updateCoins === 'function') updateCoins();
   renderBattle();
 
   setTimeout(() => {
     alert(playerWon ? '🎉 You won the battle!' : '💔 You lost the battle!');
     backToBattleSelect();
-  }, 800);
+  }, 700);
 }
 
 async function forfeitBattle() {
-  if (!confirm('Forfeit this battle? You will lose!')) return;
+  if (!confirm('Forfeit this battle? You will lose (and lose the wager if any).')) return;
   await endBattle(false);
 }
 
-// ---------- NAV ----------
+// ---------- nav / indicator ----------
 function backToBattleSelect() {
   document.getElementById('battleSelectPhase').classList.remove('hidden');
   document.getElementById('battleOpponentPhase').classList.add('hidden');
   document.getElementById('battleArenaPhase').classList.add('hidden');
-  battleState = null;
-  selectedBattleSpider = null;
+  window.battleState = null;
+  window.selectedBattleSpider = null;
   updateBattleTabIndicator();
   renderBattleSelect();
 }
-
-// Animated red dot on tab when a battle is active (ported from old file)
 function updateBattleTabIndicator() {
   const btn = document.getElementById('battleTabBtn');
   if (!btn) return;
