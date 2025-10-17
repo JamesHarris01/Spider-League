@@ -1,4 +1,763 @@
-<!DOCTYPE html>
+<script>
+        // HAT SYSTEM
+        const HAT_EMOJIS = ['🎩', '👑', '🧢', '⛑️', '🎓', '👒', '🪖', '🎖️', '⛷️', '🏔️', '🌟', '💎', '🔮', '👾', '🎯', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🎸', '🥁', '🎻', '🎲', '🎰', '🎳'];
+        const HAT_ADJECTIVES = ['Crimson', 'Golden', 'Azure', 'Emerald', 'Obsidian', 'Crystal', 'Mystic', 'Ancient', 'Ethereal', 'Radiant', 'Shadow', 'Frost', 'Flame', 'Storm', 'Lunar', 'Solar', 'Cosmic', 'Arcane', 'Divine', 'Cursed', 'Blessed', 'Legendary', 'Epic', 'Royal', 'Imperial', 'Noble', 'Savage', 'Wild', 'Primal', 'Eternal'];
+        const HAT_NOUNS = ['Crown', 'Helm', 'Cap', 'Hat', 'Tiara', 'Circlet', 'Diadem', 'Coronet', 'Headpiece', 'Topper', 'Beret', 'Hood', 'Bandana', 'Turban', 'Headdress'];
+        const HAT_TYPES = ['of Power', 'of Wisdom', 'of Speed', 'of Strength', 'of Venom', 'of Size', 'of Dominance', 'of Glory', 'of Victory', 'of Legends', 'of Champions', 'of Heroes', 'of Kings', 'of Queens', 'of Warriors', 'of Assassins', 'of Titans', 'of Gods'];
+        
+        let dailyHats = [];
+        let hatInventory = [];
+        let savedSlots = [];
+        let currentHatFilter = 'all';
+        
+        function generateHat() {
+            const roll = Math.random();
+            let rarity, statCount, minBonus, maxBonus, priceMin, priceMax;
+            
+            if (roll < 0.50) { // 50% Common
+                rarity = 'common';
+                statCount = 1;
+                minBonus = 5;
+                maxBonus = 15;
+                priceMin = 500;
+                priceMax = 1000;
+            } else if (roll < 0.75) { // 25% Uncommon
+                rarity = 'uncommon';
+                statCount = Math.random() < 0.7 ? 1 : 2;
+                minBonus = 10;
+                maxBonus = 20;
+                priceMin = 1000;
+                priceMax = 1500;
+            } else if (roll < 0.90) { // 15% Rare
+                rarity = 'rare';
+                statCount = Math.random() < 0.5 ? 1 : 2;
+                minBonus = 15;
+                maxBonus = 30;
+                priceMin = 1500;
+                priceMax = 2000;
+            } else if (roll < 0.97) { // 7% Epic
+                rarity = 'epic';
+                statCount = Math.floor(Math.random() * 2) + 2; // 2-3
+                minBonus = 20;
+                maxBonus = 40;
+                priceMin = 2000;
+                priceMax = 2500;
+            } else if (roll < 0.999) { // 2.9% Legendary
+                rarity = 'legendary';
+                statCount = Math.floor(Math.random() * 2) + 3; // 3-4
+                minBonus = 30;
+                maxBonus = 60;
+                priceMin = 2500;
+                priceMax = 3000;
+            } else { // 0.1% Mythic
+                rarity = 'mythic';
+                statCount = 5; // All stats
+                minBonus = 50;
+                maxBonus = 100;
+                priceMin = 5000;
+                priceMax = 10000;
+            }
+            
+            const stats = { strength: 0, speed: 0, size: 0, venom: 0, toughness: 0 };
+            const statNames = ['strength', 'speed', 'size', 'venom', 'toughness'];
+            const selectedStats = [...statNames].sort(() => Math.random() - 0.5).slice(0, statCount);
+            
+            selectedStats.forEach(stat => {
+                stats[stat] = Math.floor(Math.random() * (maxBonus - minBonus + 1)) + minBonus;
+            });
+            
+            const emoji = HAT_EMOJIS[Math.floor(Math.random() * HAT_EMOJIS.length)];
+            const adj = HAT_ADJECTIVES[Math.floor(Math.random() * HAT_ADJECTIVES.length)];
+            const noun = HAT_NOUNS[Math.floor(Math.random() * HAT_NOUNS.length)];
+            const type = HAT_TYPES[Math.floor(Math.random() * HAT_TYPES.length)];
+            const name = `${adj} ${noun} ${type}`;
+            
+            const price = Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+            
+            return {
+                id: `hat_${Date.now()}_${Math.random()}`,
+                name,
+                emoji,
+                rarity,
+                stats,
+                price,
+                purchasedBy: null,
+                purchasedAt: null,
+                pricePaid: null,
+                equippedTo: null
+            };
+        }
+        
+        function initializeDailyHats() {
+            const now = new Date();
+            const lastReset = window.localStorage.getItem('lastHatReset');
+            const today = now.toISOString().split('T')[0];
+            
+            if (lastReset !== today) {
+                // Reset time! Generate new hats for non-saved slots
+                const newDailyHats = [];
+                for (let i = 0; i < 3; i++) {
+                    if (savedSlots.includes(i) && dailyHats[i]) {
+                        // Keep saved slot
+                        newDailyHats.push(dailyHats[i]);
+                    } else {
+                        // Generate new hat
+                        newDailyHats.push(generateHat());
+                    }
+                }
+                dailyHats = newDailyHats;
+                window.localStorage.setItem('lastHatReset', today);
+            } else if (dailyHats.length === 0) {
+                // First time initialization
+                dailyHats = [generateHat(), generateHat(), generateHat()];
+            }
+        }
+        
+        function getTimeUntilMidnight() {
+            const now = new Date();
+            const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
+                                    now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+            const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+            return midnight - utcNow;
+        }
+        
+        function updateHatCountdown() {
+            const timeLeft = getTimeUntilMidnight();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            const countdownEl = document.getElementById('hatCountdown');
+            if (countdownEl) {
+                countdownEl.textContent = `Next hats in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (hours < 5) {
+                    countdownEl.classList.add('warning');
+                } else {
+                    countdownEl.classList.remove('warning');
+                }
+            }
+            
+            // Check if we need to reset
+            if (timeLeft <= 0) {
+                const today = new Date().toISOString().split('T')[0];
+                const lastReset = window.localStorage.getItem('lastHatReset');
+                if (lastReset !== today) {
+                    if (typeof initializeDailyHats === 'function') {
+                        initializeDailyHats();
+                    }
+                    if (typeof renderDailyHats === 'function') {
+                        renderDailyHats();
+                    }
+                }
+            }
+        }
+        
+        function getSaveCost() {
+            const savedCount = savedSlots.length;
+            if (savedCount === 0) return 50;
+            if (savedCount === 1) return 500;
+            if (savedCount === 2) return 5000;
+            return Infinity; // Can't save more than 3
+        }
+        
+        async function saveHatSlot(slotIndex) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+            
+            if (savedSlots.includes(slotIndex)) {
+                alert('This slot is already saved!');
+                return;
+            }
+            
+            const cost = getSaveCost();
+            const user = users.find(u => u.username === currentUser);
+            
+            if (user.coins < cost) {
+                alert(`Not enough coins! You need ${cost} coins to save this slot.`);
+                return;
+            }
+            
+            if (!confirm(`Save this hat slot for ${cost} coins?\n\nIt will stay available until you purchase it or release it.`)) {
+                return;
+            }
+            
+            user.coins -= cost;
+            savedSlots.push(slotIndex);
+            
+            await saveData();
+            updateCoins();
+            renderDailyHats();
+        }
+        
+        async function releaseHatSlot(slotIndex) {
+            if (!confirm('Release this saved slot? The hat will disappear at the next reset if not purchased.')) {
+                return;
+            }
+            
+            savedSlots = savedSlots.filter(s => s !== slotIndex);
+            await saveData();
+            renderDailyHats();
+        }
+        
+        async function purchaseHat(slotIndex) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const hat = dailyHats[slotIndex];
+            const user = users.find(u => u.username === currentUser);
+            
+            if (user.coins < hat.price) {
+                alert(`Not enough coins! You need ${hat.price} coins.`);
+                return;
+            }
+            
+            if (!confirm(`Purchase ${hat.name} for ${hat.price} coins?`)) {
+                return;
+            }
+            
+            user.coins -= hat.price;
+            hat.purchasedBy = currentUser;
+            hat.purchasedAt = new Date().toISOString();
+            hat.pricePaid = hat.price;
+            
+            hatInventory.push(hat);
+            
+            // Remove from daily hats and generate new one for this slot
+            if (savedSlots.includes(slotIndex)) {
+                savedSlots = savedSlots.filter(s => s !== slotIndex);
+            }
+            dailyHats[slotIndex] = generateHat();
+            
+            await saveData();
+            updateCoins();
+            renderDailyHats();
+            renderHatInventory();
+            
+            alert(`You purchased ${hat.name}!`);
+        }
+        
+        function renderDailyHats() {
+            const container = document.getElementById('dailyHatSlots');
+            if (!container) return;
+            
+            // Make sure we have hats
+            if (!dailyHats || dailyHats.length === 0) {
+                if (typeof generateHat === 'function') {
+                    dailyHats = [generateHat(), generateHat(), generateHat()];
+                } else {
+                    container.innerHTML = '<p style="color: #666;">Loading hats...</p>';
+                    return;
+                }
+            }
+            
+            container.innerHTML = dailyHats.map((hat, index) => {
+                const isSaved = savedSlots.includes(index);
+                const saveCost = getSaveCost();
+                const canSave = savedSlots.length < 3 && !isSaved;
+                
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                return `
+                    <div class="hat-slot ${isSaved ? 'saved' : ''} rarity-${hat.rarity}">
+                        ${isSaved ? '<div style="background: rgba(255, 215, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px; color: #000;">🔒 SAVED</div>' : ''}
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <h3 style="color: #4ecdc4;">${hat.name}</h3>
+                        <p style="color: #ffa500; text-transform: uppercase; font-weight: bold; margin: 10px 0;">${hat.rarity}</p>
+                        <p style="color: #ddd; margin: 10px 0;">${statList}</p>
+                        <p style="color: #ffd700; font-size: 1.3em; font-weight: bold; margin: 15px 0;">💰 ${hat.price} coins</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                            <button onclick="purchaseHat(${index})" style="flex: 1;">Buy Hat</button>
+                            ${canSave ? `<button onclick="saveHatSlot(${index})" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #000;">💾 Save (${saveCost} coins)</button>` : ''}
+                            ${isSaved ? `<button onclick="releaseHatSlot(${index})" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Release Slot</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterHats(filter) {
+            currentHatFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(filter.toLowerCase()) || 
+                    (filter === 'all' && btn.textContent === 'All Hats')) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            renderHatInventory();
+        }
+        
+        function renderHatInventory() {
+            const container = document.getElementById('hatInventory');
+            if (!container) return;
+            
+            if (!currentUser) {
+                container.innerHTML = '<p style="color: #666;">Please login to see your hats!</p>';
+                return;
+            }
+            
+            const userHats = hatInventory.filter(h => h.purchasedBy === currentUser);
+            
+            let filtered = userHats;
+            if (currentHatFilter === 'equipped') {
+                filtered = userHats.filter(h => h.equippedTo !== null);
+            } else if (currentHatFilter === 'unequipped') {
+                filtered = userHats.filter(h => h.equippedTo === null);
+            } else if (currentHatFilter !== 'all') {
+                filtered = userHats.filter(h => h.rarity === currentHatFilter);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No hats match this filter.</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(hat => {
+                const equippedSpider = hat.equippedTo ? spiders.find(s => s.id === hat.equippedTo) : null;
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                const purchaseDate = new Date(hat.purchasedAt).toLocaleDateString();
+                
+                return `
+                    <div class="hat-inventory-item rarity-${hat.rarity}">
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <div style="flex: 1;">
+                            <h3 style="color: #4ecdc4; margin-bottom: 5px;">${hat.name}</h3>
+                            <p style="color: #ffa500; text-transform: uppercase; font-size: 0.9em; font-weight: bold;">${hat.rarity}</p>
+                            <p style="color: #ddd; margin: 5px 0;">${statList}</p>
+                            <p style="color: #aaa; font-size: 0.85em; margin-top: 8px;">
+                                Purchased: ${purchaseDate} for ${hat.pricePaid} coins
+                            </p>
+                            ${equippedSpider ? 
+                                `<p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Equipped to: ${equippedSpider.name}</p>
+                                <button onclick="unequipHat('${hat.id}')" style="margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Remove Hat</button>` :
+                                `<button onclick="openEquipHatModal('${hat.id}')" style="margin-top: 10px;">Equip to Spider</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openEquipHatModal(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
+            
+            if (mySpiders.length === 0) {
+                alert('You have no spiders to equip this hat to!');
+                return;
+            }
+            
+            const spiderList = mySpiders.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+            const choice = prompt(`Equip ${hat.name} to which spider?\n\n${spiderList}\n\nEnter the number:`);
+            
+            if (!choice) return;
+            
+            const index = parseInt(choice) - 1;
+            if (index < 0 || index >= mySpiders.length) {
+                alert('Invalid choice!');
+                return;
+            }
+            
+            equipHatToSpider(hatId, mySpiders[index].id);
+        }
+        
+        async function equipHatToSpider(hatId, spiderId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const spider = spiders.find(s => s.id === spiderId);
+            
+            if (!hat || !spider) return;
+            
+            // Remove hat from any other spider
+            if (spider.hatId) {
+                const oldHat = hatInventory.find(h => h.id === spider.hatId);
+                if (oldHat) oldHat.equippedTo = null;
+            }
+            
+            // Unequip this hat from any spider
+            if (hat.equippedTo) {
+                const oldSpider = spiders.find(s => s.id === hat.equippedTo);
+                if (oldSpider) oldSpider.hatId = null;
+            }
+            
+            // Equip the hat
+            hat.equippedTo = spiderId;
+            spider.hatId = hatId;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert(`Equipped ${hat.name} to ${spider.name}!`);
+        }
+        
+        async function unequipHat(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            if (!hat) return;
+            
+            const spider = spiders.find(s => s.id === hat.equippedTo);
+            
+            hat.equippedTo = null;
+            if (spider) spider.hatId = null;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert('Hat removed!');
+        }
+        
+        function getSpiderWithHatStats(spider) {
+            const baseStats = {
+                strength: spider.strength,
+                speed: spider.speed,
+                size: spider.size,
+                venom: spider.venom,
+                toughness: spider.toughness,
+                maxToughness: spider.maxToughness
+            };
+            
+            if (!spider.hatId) return baseStats;
+            
+            const hat = hatInventory.find(h => h.id === spider.hatId);
+            if (!hat) return baseStats;
+            
+            return {
+                strength: baseStats.strength + (hat.stats.strength || 0),
+                speed: baseStats.speed + (hat.stats.speed || 0),
+                size: baseStats.size + (hat.stats.size || 0),
+                venom: baseStats.venom + (hat.stats.venom || 0),
+                toughness: baseStats.toughness + (hat.stats.toughness || 0),
+                maxToughness: baseStats.maxToughness + (hat.stats.toughness || 0)
+            };
+        }
+        
+        function initializeDailyHats() {
+            const now = new Date();
+            const lastReset = window.localStorage.getItem('lastHatReset');
+            const today = now.toISOString().split('T')[0];
+            
+            if (lastReset !== today) {
+                // Reset time! Generate new hats for non-saved slots
+                const newDailyHats = [];
+                for (let i = 0; i < 3; i++) {
+                    if (savedSlots.includes(i) && dailyHats[i]) {
+                        // Keep saved slot
+                        newDailyHats.push(dailyHats[i]);
+                    } else {
+                        // Generate new hat
+                        newDailyHats.push(generateHat());
+                    }
+                }
+                dailyHats = newDailyHats;
+                window.localStorage.setItem('lastHatReset', today);
+            } else if (dailyHats.length === 0) {
+                // First time initialization
+                dailyHats = [generateHat(), generateHat(), generateHat()];
+            }
+        }
+        
+        function getTimeUntilMidnight() {
+            const now = new Date();
+            const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
+                                    now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+            const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+            return midnight - utcNow;
+        }
+        
+        function updateHatCountdown() {
+            const timeLeft = getTimeUntilMidnight();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            const countdownEl = document.getElementById('hatCountdown');
+            if (countdownEl) {
+                countdownEl.textContent = `Next hats in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (hours < 5) {
+                    countdownEl.classList.add('warning');
+                } else {
+                    countdownEl.classList.remove('warning');
+                }
+            }
+            
+            // Check if we need to reset
+            if (timeLeft <= 0) {
+                const today = new Date().toISOString().split('T')[0];
+                const lastReset = window.localStorage.getItem('lastHatReset');
+                if (lastReset !== today) {
+                    initializeDailyHats();
+                    renderDailyHats();
+                }
+            }
+        }
+        
+        function getSaveCost() {
+            const savedCount = savedSlots.length;
+            if (savedCount === 0) return 50;
+            if (savedCount === 1) return 500;
+            if (savedCount === 2) return 5000;
+            return Infinity;
+        }
+        
+        async function saveHatSlot(slotIndex) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+            
+            if (savedSlots.includes(slotIndex)) {
+                alert('This slot is already saved!');
+                return;
+            }
+            
+            const cost = getSaveCost();
+            const user = users.find(u => u.username === currentUser);
+            
+            if (user.coins < cost) {
+                alert(`Not enough coins! You need ${cost} coins to save this slot.`);
+                return;
+            }
+            
+            if (!confirm(`Save this hat slot for ${cost} coins?\n\nIt will stay available until you purchase it or release it.`)) {
+                return;
+            }
+            
+            user.coins -= cost;
+            savedSlots.push(slotIndex);
+            
+            await saveData();
+            updateCoins();
+            renderDailyHats();
+        }
+        
+        async function releaseHatSlot(slotIndex) {
+            if (!confirm('Release this saved slot? The hat will disappear at the next reset if not purchased.')) {
+                return;
+            }
+            
+            savedSlots = savedSlots.filter(s => s !== slotIndex);
+            await saveData();
+            renderDailyHats();
+        }
+        
+        async function purchaseHat(slotIndex) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const hat = dailyHats[slotIndex];
+            const user = users.find(u => u.username === currentUser);
+            
+            if (user.coins < hat.price) {
+                alert(`Not enough coins! You need ${hat.price} coins.`);
+                return;
+            }
+            
+            if (!confirm(`Purchase ${hat.name} for ${hat.price} coins?`)) {
+                return;
+            }
+            
+            user.coins -= hat.price;
+            hat.purchasedBy = currentUser;
+            hat.purchasedAt = new Date().toISOString();
+            hat.pricePaid = hat.price;
+            
+            hatInventory.push(hat);
+            
+            if (savedSlots.includes(slotIndex)) {
+                savedSlots = savedSlots.filter(s => s !== slotIndex);
+            }
+            dailyHats[slotIndex] = generateHat();
+            
+            await saveData();
+            updateCoins();
+            renderDailyHats();
+            renderHatInventory();
+            
+            alert(`You purchased ${hat.name}!`);
+        }
+        
+        function renderDailyHats() {
+            const container = document.getElementById('dailyHatSlots');
+            if (!container) return;
+            
+            container.innerHTML = dailyHats.map((hat, index) => {
+                const isSaved = savedSlots.includes(index);
+                const saveCost = getSaveCost();
+                const canSave = savedSlots.length < 3 && !isSaved;
+                
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                return `
+                    <div class="hat-slot ${isSaved ? 'saved' : ''} rarity-${hat.rarity}">
+                        ${isSaved ? '<div style="background: rgba(255, 215, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px; color: #000;">🔒 SAVED</div>' : ''}
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <h3 style="color: #4ecdc4;">${hat.name}</h3>
+                        <p style="color: #ffa500; text-transform: uppercase; font-weight: bold; margin: 10px 0;">${hat.rarity}</p>
+                        <p style="color: #ddd; margin: 10px 0;">${statList}</p>
+                        <p style="color: #ffd700; font-size: 1.3em; font-weight: bold; margin: 15px 0;">💰 ${hat.price} coins</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                            <button onclick="purchaseHat(${index})" style="flex: 1;">Buy Hat</button>
+                            ${canSave ? `<button onclick="saveHatSlot(${index})" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #000;">💾 Save (${saveCost} coins)</button>` : ''}
+                            ${isSaved ? `<button onclick="releaseHatSlot(${index})" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Release Slot</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterHats(filter) {
+            currentHatFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(filter.toLowerCase()) || 
+                    (filter === 'all' && btn.textContent === 'All Hats')) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            renderHatInventory();
+        }
+        
+        function renderHatInventory() {
+            const container = document.getElementById('hatInventory');
+            if (!container) return;
+            
+            if (!currentUser) {
+                container.innerHTML = '<p style="color: #666;">Please login to see your hats!</p>';
+                return;
+            }
+            
+            const userHats = hatInventory.filter(h => h.purchasedBy === currentUser);
+            
+            let filtered = userHats;
+            if (currentHatFilter === 'equipped') {
+                filtered = userHats.filter(h => h.equippedTo !== null);
+            } else if (currentHatFilter === 'unequipped') {
+                filtered = userHats.filter(h => h.equippedTo === null);
+            } else if (currentHatFilter !== 'all') {
+                filtered = userHats.filter(h => h.rarity === currentHatFilter);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No hats match this filter.</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(hat => {
+                const equippedSpider = hat.equippedTo ? spiders.find(s => s.id === hat.equippedTo) : null;
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                const purchaseDate = new Date(hat.purchasedAt).toLocaleDateString();
+                
+                return `
+                    <div class="hat-inventory-item rarity-${hat.rarity}">
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <div style="flex: 1;">
+                            <h3 style="color: #4ecdc4; margin-bottom: 5px;">${hat.name}</h3>
+                            <p style="color: #ffa500; text-transform: uppercase; font-size: 0.9em; font-weight: bold;">${hat.rarity}</p>
+                            <p style="color: #ddd; margin: 5px 0;">${statList}</p>
+                            <p style="color: #aaa; font-size: 0.85em; margin-top: 8px;">
+                                Purchased: ${purchaseDate} for ${hat.pricePaid} coins
+                            </p>
+                            ${equippedSpider ? 
+                                `<p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Equipped to: ${equippedSpider.name}</p>
+                                <button onclick="unequipHat('${hat.id}')" style="margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Remove Hat</button>` :
+                                `<button onclick="openEquipHatModal('${hat.id}')" style="margin-top: 10px;">Equip to Spider</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openEquipHatModal(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
+            
+            if (mySpiders.length === 0) {
+                alert('You have no spiders to equip this hat to!');
+                return;
+            }
+            
+            const spiderList = mySpiders.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+            const choice = prompt(`Equip ${hat.name} to which spider?\n\n${spiderList}\n\nEnter the number:`);
+            
+            if (!choice) return;
+            
+            const index = parseInt(choice) - 1;
+            if (index < 0 || index >= mySpiders.length) {
+                alert('Invalid choice!');
+                return;
+            }
+            
+            equipHatToSpider(hatId, mySpiders[index].id);
+        }
+        
+        async function equipHatToSpider(hatId, spiderId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const spider = spiders.find(s => s.id === spiderId);
+            
+            if (!hat || !spider) return;
+            
+            if (spider.hatId) {
+                const oldHat = hatInventory.find(h => h.id === spider.hatId);
+                if (oldHat) oldHat.equippedTo = null;
+            }
+            
+            if (hat.equippedTo) {
+                const oldSpider = spiders.find(s => s.id === hat.equippedTo);
+                if (oldSpider) oldSpider.hatId = null;
+            }
+            
+            hat.equippedTo = spiderId;
+            spider.hatId = hatId;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert(`Equipped ${hat.name} to ${spider.name}!`);
+        }
+        
+        async function unequipHat(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            if (!hat) return;
+            
+            const spider = spiders.find(s => s.id === hat.equippedTo);
+            
+            hat.equippedTo = null;
+            if (spider) spider.hatId = null;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert('Hat removed!');
+        }
+
+        // Move list with stat-based scaling<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -147,7 +906,80 @@
             margin-top: 20px;
         }
         
-        @media (max-width: 640px) {
+        .rarity-common { border-color: rgba(158, 158, 158, 0.8) !important; }
+        .rarity-uncommon { border-color: rgba(30, 255, 0, 0.8) !important; }
+        .rarity-rare { border-color: rgba(0, 112, 221, 0.8) !important; }
+        .rarity-epic { border-color: rgba(163, 53, 238, 0.8) !important; }
+        .rarity-legendary { border-color: rgba(255, 128, 0, 0.8) !important; }
+        .rarity-mythic { 
+            border-color: rgba(255, 0, 0, 0.8) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            animation: mythicGlow 2s infinite;
+        }
+        
+        @keyframes mythicGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.8); }
+        }
+        
+        .countdown-timer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .countdown-timer.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-size: 2em;
+            animation: shake 0.5s infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .hat-slot {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .hat-slot.saved {
+            border-color: rgba(255, 215, 0, 0.8);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .hat-emoji {
+            font-size: 4em;
+            margin: 10px 0;
+        }
+        
+        .hat-inventory-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .hat-inventory-item .hat-emoji {
+            font-size: 3em;
+            margin: 0;
+        }
             .spider-grid {
                 grid-template-columns: 1fr;
             }
@@ -168,6 +1000,24 @@
             margin-bottom: 15px;
             background: rgba(0, 0, 0, 0.3);
             touch-action: manipulation;
+            position: relative;
+        }
+        
+        .spider-image-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            margin-bottom: 15px;
+        }
+        
+        .spider-hat {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3em;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
         }
         
         .spider-name {
@@ -764,7 +1614,36 @@
             </div>
         </div>
 
+        <!-- Shop & Hats Tab -->
         <div id="shopTab" class="tab-content">
+            <div class="config-section">
+                <h2>🎩 Hat Shop</h2>
+                
+                <div class="countdown-timer" id="hatCountdown">
+                    Next hats in: --:--:--
+                </div>
+                
+                <div id="dailyHatSlots"></div>
+            </div>
+            
+            <div class="config-section">
+                <h2>🎒 Your Hat Collection</h2>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button class="filter-btn active" onclick="filterHats('all')">All Hats</button>
+                    <button class="filter-btn" onclick="filterHats('equipped')">Equipped</button>
+                    <button class="filter-btn" onclick="filterHats('unequipped')">Unequipped</button>
+                    <button class="filter-btn" onclick="filterHats('common')">Common</button>
+                    <button class="filter-btn" onclick="filterHats('uncommon')">Uncommon</button>
+                    <button class="filter-btn" onclick="filterHats('rare')">Rare</button>
+                    <button class="filter-btn" onclick="filterHats('epic')">Epic</button>
+                    <button class="filter-btn" onclick="filterHats('legendary')">Legendary</button>
+                    <button class="filter-btn" onclick="filterHats('mythic')">Mythic</button>
+                </div>
+                
+                <div id="hatInventory"></div>
+            </div>
+            
             <div class="config-section">
                 <h2>🎒 Your Inventory</h2>
                 <div id="inventoryDisplay" class="inventory-display">
@@ -772,7 +1651,7 @@
                 </div>
             </div>
             <div class="config-section">
-                <h2>🛒 Shop</h2>
+                <h2>🛒 Item Shop</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
                     <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
                         <div style="font-size: 3em;">⚡</div>
@@ -1200,6 +2079,8 @@
                 document.getElementById('shopTab').classList.add('active');
                 updateShopPrices();
                 renderInventory();
+                if (typeof renderDailyHats === 'function') renderDailyHats();
+                if (typeof renderHatInventory === 'function') renderHatInventory();
             } else if (tab === 'admin') {
                 document.getElementById('adminTabContent').classList.add('active');
                 checkAdminAccess();
@@ -1433,6 +2314,9 @@
                 tradeOffers = content.tradeOffers || [];
                 bugReports = content.bugReports || [];
                 activeBattles = content.activeBattles || [];
+                dailyHats = content.dailyHats || dailyHats;
+                hatInventory = content.hatInventory || [];
+                savedSlots = content.savedSlots || [];
                 
                 renderSpiders();
                 updateCoins();
@@ -1440,6 +2324,8 @@
                 renderInventory();
                 updateTagline();
                 updateTradeTabIndicator();
+                renderDailyHats();
+                renderHatInventory();
             } catch (error) {
                 console.error('Load error:', error);
             }
@@ -1471,7 +2357,7 @@
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports, activeBattles };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports, activeBattles, dailyHats, hatInventory, savedSlots };
 
             try {
                 if (!config.gistId) {
@@ -1616,6 +2502,14 @@
             if (spider.owner !== currentUser && currentUser !== 'admin') {
                 alert('You can only delete your own spiders!');
                 return;
+            }
+            
+            // Return hat to inventory if equipped
+            if (spider.hatId) {
+                const hat = hatInventory.find(h => h.id === spider.hatId);
+                if (hat) {
+                    hat.equippedTo = null;
+                }
             }
 
             spiders = spiders.filter(s => s.id !== id);
@@ -2156,13 +3050,22 @@
         function calculateDamage(move, attacker, defender) {
             let damage = move.power;
             
-            const statValue = attacker.spider[move.stat] || 0;
+            // Get effective stats with hat bonuses
+            const attackerStats = attacker.spider.hatId ? 
+                getSpiderWithHatStats(attacker.spider) : 
+                attacker.spider;
+            
+            const statValue = attackerStats[move.stat] || 0;
             const statMod = attacker.effects[move.stat + 'Mod'] || 0;
             const effectiveStat = statValue + statMod;
             
             damage += Math.floor(effectiveStat / 5);
             
-            const defenderToughness = (defender.spider.toughness || 0) + (defender.effects.toughnessMod || 0);
+            const defenderStats = defender.spider.hatId ?
+                getSpiderWithHatStats(defender.spider) :
+                defender.spider;
+            
+            const defenderToughness = (defenderStats.toughness || 0) + (defender.effects.toughnessMod || 0);
             damage = Math.max(5, damage - Math.floor(defenderToughness / 20));
             
             const isCrit = (move.effect && move.effect.type === 'guaranteed_crit') || Math.random() < 0.1;
@@ -3095,8 +3998,20 @@
             showStatus('adminStatus', 'All bug reports cleared!', 'success');
         }
 
+        // ===== INITIALIZATION =====
         loadConfig();
         updateTagline();
+        
+        // Initialize hat system after all functions are defined
+        setTimeout(() => {
+            if (typeof initializeDailyHats === 'function') {
+                initializeDailyHats();
+            }
+            if (typeof updateHatCountdown === 'function') {
+                setInterval(updateHatCountdown, 1000);
+                updateHatCountdown();
+            }
+        }, 100);
         
         window.addEventListener('beforeunload', () => {
             if (pendingSave) {
