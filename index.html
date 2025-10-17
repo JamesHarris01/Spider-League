@@ -1993,33 +1993,37 @@
             grid.innerHTML = html;
         }
 
-        function renderBattleSelect() {
-            const grid = document.getElementById('battleSelectSpiders');
-            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.toughness > 0);
+function renderBattleSelect() {
+  const grid = document.getElementById('battleSelectSpiders');
 
-            if (mySpiders.length === 0) {
-                grid.innerHTML = '<p style="color: #666;">You have no healthy verified spiders to battle!</p>';
-                return;
-            }
+  if (!currentUser) {
+    grid.innerHTML = '<p style="color:#666;">Please log in to pick a spider for battle.</p>';
+    return;
+  }
 
-            grid.innerHTML = mySpiders.map(spider => {
-                const inBattle = isSpiderInBattle(spider.id);
-                return `
-                    <div class="spider-card" style="cursor: ${inBattle ? 'not-allowed' : 'pointer'}; opacity: ${inBattle ? '0.5' : '1'};" ${!inBattle ? `onclick="selectBattleSpider(${spider.id})"` : ''}>
-                        ${inBattle ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⚔️ In Battle</div>' : ''}
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                        <div class="spider-name">${spider.name}</div>
-                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                        <div class="hp-bar">
-                            <div class="hp-fill ${spider.toughness < spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(spider.toughness / spider.maxToughness) * 100}%">
-                                Toughness: ${spider.toughness}/${spider.maxToughness}
-                            </div>
-                        </div>
-                        ${!inBattle ? '<button>Select for Battle</button>' : '<button disabled>Spider is Busy</button>'}
-                    </div>
-                `;
-            }).join('');
-        }
+  const mySpiders = spiders.filter(
+    s => s.owner === currentUser && s.verified && s.toughness > 0
+  );
+
+  if (mySpiders.length === 0) {
+    grid.innerHTML = '<p style="color:#666;">You have no healthy, verified spiders. Create one, or ask an admin to approve yours, or revive a fainted one.</p>';
+    return;
+  }
+
+  // ✅ Render the battle-ready spiders
+  grid.innerHTML = mySpiders
+    .map(
+      s => `
+      <div class="card" onclick="selectBattleSpider('${s.id}')">
+        <h3>${s.name}</h3>
+        <p><strong>Species:</strong> ${s.species}</p>
+        <p><strong>Toughness:</strong> ${s.toughness}</p>
+        <p><strong>Power:</strong> ${s.power}</p>
+      </div>
+    `
+    )
+    .join('');
+}
 
         function isSpiderInBattle(spiderId) {
             return activeBattles.some(battle => 
@@ -2389,9 +2393,12 @@
             await endBattle(false);
         }
 
-        function backToBattleSelect() {
-            alert('Back to battle select');
-        }
+     	function backToBattleSelect() {
+ 			selectedBattleSpider = null;
+  			document.getElementById('battleOpponentPhase').classList.add('hidden');
+  			document.getElementById('battleSelectPhase').classList.remove('hidden');
+  			renderBattleSelect();
+		}
 
         function updateBattleTabIndicator() {
             // Placeholder
