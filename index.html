@@ -187,6 +187,37 @@
             font-size: clamp(13px, 3.2vw, 15px);
         }
         
+        .stat-allocator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .stat-allocator button {
+            padding: 8px 16px;
+            min-height: 40px;
+            margin: 0;
+        }
+        
+        .stat-allocator input {
+            width: 60px;
+            text-align: center;
+            padding: 8px;
+            min-height: 40px;
+        }
+        
+        .points-remaining {
+            background: rgba(255, 165, 0, 0.2);
+            border: 2px solid rgba(255, 165, 0, 0.6);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.1em;
+            color: #ffa500;
+        }
+        
         .user-coins {
             background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
             color: #000;
@@ -453,7 +484,6 @@
             font-size: clamp(14px, 3.5vw, 16px);
         }
         
-        /* Prevent iOS zoom on input focus */
         @media screen and (max-width: 767px) {
             input[type="text"],
             input[type="password"],
@@ -464,7 +494,6 @@
             }
         }
         
-        /* Safe area support for notched devices */
         @supports (padding: max(0px)) {
             body {
                 padding-left: max(15px, env(safe-area-inset-left));
@@ -473,7 +502,6 @@
             }
         }
         
-        /* Battle tab pulse animation */
         @keyframes pulse {
             0%, 100% { 
                 background: rgba(255, 255, 255, 0.1);
@@ -484,7 +512,6 @@
             }
         }
         
-        /* Bug report button */
         .bug-report-btn {
             position: fixed;
             bottom: 20px;
@@ -574,7 +601,7 @@
 
         <div style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
             <button onclick="toggleConfig()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">⚙️ Settings</button>
-            <span class="user-coins" id="userCoins" style="cursor: pointer;" onclick="openLoginModal()">💰 0 coins</span>
+            <div class="user-coins" id="userCoins">💰 0 coins</div>
             <button onclick="openLoginModal()" id="loginBtn" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%);">👤 Login / Register</button>
             <button onclick="logout()" id="logoutBtn" class="hidden" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🚪 Logout</button>
         </div>
@@ -603,7 +630,6 @@
             <button class="tab-btn hidden" onclick="switchTab('admin')" id="adminTab">👑 Admin</button>
         </div>
 
-        <!-- Collection Tab -->
         <div id="collectionTab" class="tab-content active">
             <div class="config-section">
                 <h2>🕸️ Spider Collection</h2>
@@ -617,7 +643,6 @@
             </div>
         </div>
 
-        <!-- Add Spider Tab -->
         <div id="addTab" class="tab-content">
             <div class="config-section">
                 <h2>➕ Add New Spider</h2>
@@ -641,17 +666,58 @@
                         <p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Image ready to upload</p>
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>Strength (1-100):</label>
-                    <input type="number" id="strength" min="1" max="100" value="50">
-                </div>
-                <div class="input-group">
-                    <label>Speed (1-100):</label>
-                    <input type="number" id="speed" min="1" max="100" value="50">
+                
+                <div class="points-remaining" id="pointsRemaining">
+                    <strong>Points Remaining: <span id="pointsCount">100</span>/100</strong>
                 </div>
                 
-                <h3 style="color: #4ecdc4; margin-top: 20px;">Custom Fields</h3>
-                <p style="color: #aaa; font-size: 0.9em; margin-bottom: 10px;">Add your own custom stats and information!</p>
+                <div class="input-group">
+                    <label>Strength:</label>
+                    <div class="stat-allocator">
+                        <button onclick="changeStat('strength', -1)">−</button>
+                        <input type="number" id="strength" value="20" min="0" max="100" readonly>
+                        <button onclick="changeStat('strength', 1)">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Speed:</label>
+                    <div class="stat-allocator">
+                        <button onclick="changeStat('speed', -1)">−</button>
+                        <input type="number" id="speed" value="20" min="0" max="100" readonly>
+                        <button onclick="changeStat('speed', 1)">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Size:</label>
+                    <div class="stat-allocator">
+                        <button onclick="changeStat('size', -1)">−</button>
+                        <input type="number" id="size" value="20" min="0" max="100" readonly>
+                        <button onclick="changeStat('size', 1)">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Venom:</label>
+                    <div class="stat-allocator">
+                        <button onclick="changeStat('venom', -1)">−</button>
+                        <input type="number" id="venom" value="20" min="0" max="100" readonly>
+                        <button onclick="changeStat('venom', 1)">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Toughness:</label>
+                    <div class="stat-allocator">
+                        <button onclick="changeStat('toughness', -1)">−</button>
+                        <input type="number" id="toughness" value="20" min="0" max="100" readonly>
+                        <button onclick="changeStat('toughness', 1)">+</button>
+                    </div>
+                </div>
+                
+                <h3 style="color: #4ecdc4; margin-top: 20px;">Custom Fields (Optional)</h3>
+                <p style="color: #aaa; font-size: 0.9em; margin-bottom: 10px;">Add fun custom info (won't affect battles)</p>
                 <div id="customFieldsContainer"></div>
                 <button onclick="addCustomField()" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); margin-bottom: 15px;">+ Add Custom Field</button>
                 
@@ -660,7 +726,6 @@
             </div>
         </div>
 
-        <!-- Battle Tab -->
         <div id="battleTab" class="tab-content">
             <div class="config-section">
                 <h2>⚔️ Battle Arena</h2>
@@ -677,24 +742,20 @@
             </div>
         </div>
 
-        <!-- Trade Tab -->
         <div id="tradeTab" class="tab-content">
             <div class="config-section">
                 <h2>🔄 Trade Center</h2>
                 
-                <!-- Incoming Trade Offers -->
                 <div style="background: rgba(78, 205, 196, 0.1); border: 2px solid rgba(78, 205, 196, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h3 style="color: #4ecdc4; margin-bottom: 10px;">📥 Incoming Trade Offers</h3>
                     <div id="incomingTrades"></div>
                 </div>
 
-                <!-- Outgoing Trade Offers -->
                 <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h3 style="color: #ffa500; margin-bottom: 10px;">📤 Outgoing Trade Offers</h3>
                     <div id="outgoingTrades"></div>
                 </div>
 
-                <!-- Make New Trade Offer -->
                 <div>
                     <h3 style="color: #4ecdc4; margin-bottom: 15px;">✨ Create Trade Offer</h3>
                     <p style="color: #aaa; margin-bottom: 15px;">Select one of your spiders to offer in trade:</p>
@@ -703,7 +764,6 @@
             </div>
         </div>
 
-        <!-- Shop & Inventory Tab -->
         <div id="shopTab" class="tab-content">
             <div class="config-section">
                 <h2>🎒 Your Inventory</h2>
@@ -717,21 +777,21 @@
                     <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
                         <div style="font-size: 3em;">⚡</div>
                         <h3>Potion</h3>
-                        <p style="color: #aaa;">Restore 20 HP in battle</p>
+                        <p style="color: #aaa;">Restore 20 Toughness in battle</p>
                         <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="pricePotion">15</span> coins</div>
                         <button onclick="buyShopItem('potion')">Buy</button>
                     </div>
                     <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
                         <div style="font-size: 3em;">💊</div>
                         <h3>Super Potion</h3>
-                        <p style="color: #aaa;">Restore 50 HP in battle</p>
+                        <p style="color: #aaa;">Restore 50 Toughness in battle</p>
                         <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="priceSuperPotion">30</span> coins</div>
                         <button onclick="buyShopItem('superPotion')">Buy</button>
                     </div>
                     <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; text-align: center;">
                         <div style="font-size: 3em;">✨</div>
                         <h3>Full Restore</h3>
-                        <p style="color: #aaa;">Restore all HP in battle</p>
+                        <p style="color: #aaa;">Restore all Toughness in battle</p>
                         <div style="color: #ffd700; font-weight: bold; margin: 10px 0; font-size: 1.2em;">💰 <span id="priceFullRestore">50</span> coins</div>
                         <button onclick="buyShopItem('fullRestore')">Buy</button>
                     </div>
@@ -740,7 +800,6 @@
             </div>
         </div>
 
-        <!-- Admin Tab -->
         <div id="adminTabContent" class="tab-content">
             <div class="config-section">
                 <h2>👑 Admin Panel</h2>
@@ -797,12 +856,10 @@
             </div>
         </div>
 
-        <!-- Bug Report Button -->
         <button class="bug-report-btn" onclick="openBugReport()">
             🐛 Report Bug
         </button>
 
-        <!-- Login Modal -->
         <div id="loginModal" class="login-modal" onclick="closeLoginModalOnOverlay(event)">
             <div class="login-content" onclick="event.stopPropagation()">
                 <h2>👤 Login / Register</h2>
@@ -829,7 +886,6 @@
             </div>
         </div>
 
-        <!-- Bug Report Modal -->
         <div id="bugReportModal" class="bug-report-modal" onclick="closeBugReportOnOverlay(event)">
             <div class="bug-report-content" onclick="event.stopPropagation()">
                 <h2>🐛 Report a Bug</h2>
@@ -861,50 +917,36 @@
     </div>
 
     <script>
-        // ===== MOVE LIST (EDITABLE BY ADMIN) =====
+        // Move list with stat-based scaling
         let MOVE_LIST = [
-            // Damage moves
-            { name: "Bite", type: "physical", basePower: 50, effect: null },
-            { name: "Venom Fang", type: "physical", basePower: 60, effect: null },
-            { name: "Quick Strike", type: "speed", basePower: 35, effect: null },
+            // Strength-based moves
+            { name: "Bite", stat: "strength", basePower: 50, effect: null },
+            { name: "Venom Fang", stat: "strength", basePower: 60, effect: null },
+            { name: "Reckless Charge", stat: "strength", basePower: 90, effect: { type: "recoil", percent: 0.25 } },
+            { name: "Wild Tackle", stat: "strength", basePower: 70, effect: { type: "recoil", percent: 0.2 } },
             
-            // Status moves with poison
-            { name: "Poison Sting", type: "physical", basePower: 30, effect: { type: "poison", chance: 0.5, damage: 8 } },
-            { name: "Toxic Bite", type: "physical", basePower: 40, effect: { type: "poison", chance: 0.8, damage: 12 } },
+            // Speed-based moves
+            { name: "Quick Strike", stat: "speed", basePower: 35, effect: null },
+            { name: "Agility", stat: "speed", basePower: 0, effect: { type: "boost", stat: "speed", amount: 15 } },
+            { name: "Assassination", stat: "speed", basePower: 55, effect: { type: "guaranteed_crit" } },
             
-            // Draining/healing moves
-            { name: "Leech Life", type: "physical", basePower: 40, effect: { type: "drain", percent: 0.5 } },
-            { name: "Spider Drain", type: "web", basePower: 50, effect: { type: "drain", percent: 0.6 } },
+            // Size-based moves
+            { name: "Body Slam", stat: "size", basePower: 55, effect: null },
+            { name: "Intimidate", stat: "size", basePower: 45, effect: { type: "accuracy_down", amount: 15, turns: 2 } },
             
-            // Multi-hit moves
-            { name: "Web Barrage", type: "web", basePower: 25, effect: { type: "multihit", hits: 3 } },
-            { name: "Fury Swipes", type: "physical", basePower: 18, effect: { type: "multihit", hits: 4 } },
+            // Venom-based moves
+            { name: "Poison Sting", stat: "venom", basePower: 30, effect: { type: "poison", chance: 0.5, damage: 8 } },
+            { name: "Toxic Bite", stat: "venom", basePower: 40, effect: { type: "poison", chance: 0.8, damage: 12 } },
+            { name: "Venom Drain", stat: "venom", basePower: 50, effect: { type: "drain", percent: 0.6 } },
             
-            // Stat boosting moves
-            { name: "Agility", type: "speed", basePower: 0, effect: { type: "boost", stat: "speed", amount: 15 } },
-            { name: "Harden", type: "physical", basePower: 0, effect: { type: "boost", stat: "defense", amount: 12 } },
-            { name: "Focus Energy", type: "speed", basePower: 0, effect: { type: "boost", stat: "strength", amount: 10 } },
-            
-            // Web/trap moves
-            { name: "Silk Trap", type: "web", basePower: 20, effect: { type: "trap", damage: 10, turns: 2 } },
-            { name: "Sticky Web", type: "web", basePower: 0, effect: { type: "slow", amount: 10, turns: 3 } },
-            { name: "Web Shot", type: "web", basePower: 40, effect: { type: "slow", amount: 5, turns: 2 } },
-            
-            // Recoil moves (high risk, high reward)
-            { name: "Reckless Charge", type: "physical", basePower: 90, effect: { type: "recoil", percent: 0.25 } },
-            { name: "Wild Tackle", type: "physical", basePower: 70, effect: { type: "recoil", percent: 0.2 } },
-            
-            // Accuracy/evasion moves
-            { name: "Sand Attack", type: "speed", basePower: 0, effect: { type: "accuracy_down", amount: 15, turns: 2 } },
-            
-            // Guaranteed crit moves
-            { name: "Assassination", type: "speed", basePower: 55, effect: { type: "guaranteed_crit" } },
-            
-            // Charge moves (wait 1 turn, big damage)
-            { name: "Solar Beam", type: "web", basePower: 120, effect: { type: "charge", turns: 1 } }
+            // Multi-stat moves
+            { name: "Web Barrage", stat: "speed", basePower: 25, effect: { type: "multihit", hits: 3 } },
+            { name: "Fury Swipes", stat: "strength", basePower: 18, effect: { type: "multihit", hits: 4 } },
+            { name: "Silk Trap", stat: "size", basePower: 20, effect: { type: "trap", damage: 10, turns: 2 } },
+            { name: "Sticky Web", stat: "venom", basePower: 0, effect: { type: "slow", amount: 10, turns: 3 } },
+            { name: "Web Shot", stat: "speed", basePower: 40, effect: { type: "slow", amount: 5, turns: 2 } }
         ];
 
-        // ===== GAME STATE =====
         let config = { githubToken: '', gistId: '' };
         let spiders = [];
         let users = [];
@@ -915,9 +957,9 @@
         let selectedBattleSpider = null;
         let tradeOffers = [];
         let customFieldsCount = 0;
-        let uploadedImageData = null; // Store uploaded image as base64
+        let uploadedImageData = null;
         let bugReports = [];
-        let activeBattles = []; // Track ongoing battles
+        let activeBattles = [];
         let taglines = [
             "Spider League: Because Therapy Was Booked",
             "Eight Legs, Zero Thoughts",
@@ -928,50 +970,23 @@
             "No Thoughts, Just Spiders",
             "Spider League: Unhinged Since Tuesday",
             "POV You are a Spider",
-            "Spiders But Make It Your Entire Personality",
-            "The Vibes Are Rancid",
-            "Chronically Online Spiders",
-            "This Could Have Been an Email",
-            "Eight Legs, No Brain Cells",
-            "It's Corn",
-            "Spiders fucking suck",
-            "We're All Just Raw-Dogging Reality",
-            "The Spiders Are Not Okay",
-            "Touch Grass? No, Touch Web",
-            "Screaming, Crying, Throwing Up",
-            "Vibes Are Immaculate and Also Terrible",
-            "An Existential Crisis Simulator",
-            "No Context, Just Vibes",
-            "For People Who Peak at Being Mid",
-            "Your K/D Is Embarrassing",
-            "You're the Reason We Can't Have Nice Things",
-            "Skill Issue, Honestly",
-            "Imagine Being This Bad at Spiders",
-            "Spider League: Unemployed Behavior",
-            "You've Been Playing for HOW Long?",
-            "This REALLY Fell Off",
-            "This Is Why No One Invites You to Parties",
-            "Your Duos Partner Carries You",
-            "Uninstall Challenge (Impossible)",
-            "You Can't Even Blame Lag",
-            "Touch Grass Speedrun Any%",
-            "Spider League: This Could've Been Sleep"
+            "Spiders But Make It Your Entire Personality"
         ];
 
-        // Battle status effects
         function initBattleEffects() {
             return {
                 poison: { active: false, damage: 0 },
                 trapped: { active: false, damage: 0, turns: 0 },
                 speedMod: 0,
                 strengthMod: 0,
-                defenseMod: 0,
+                sizeMod: 0,
+                venomMod: 0,
+                toughnessMod: 0,
                 accuracyMod: 0,
                 charging: { active: false, move: null }
             };
         }
         
-        // Get daily tagline
         function getDailyTagline() {
             const today = new Date();
             const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
@@ -979,7 +994,6 @@
             return taglines[index];
         }
         
-        // Update tagline display
         function updateTagline() {
             const taglineElement = document.getElementById('tagline');
             if (taglineElement) {
@@ -987,9 +1001,7 @@
             }
         }
 
-        // ===== UTILITY FUNCTIONS =====
         function calculateXpForLevel(level) {
-            // Exponential growth: 100 * (level ^ 1.5)
             return Math.floor(100 * Math.pow(level, 1.5));
         }
         
@@ -1003,20 +1015,25 @@
             spider.level++;
             spider.xp = 0;
             
-            // Random stat increases (1-3 points each)
-            const strengthGain = Math.floor(Math.random() * 3) + 1;
-            const speedGain = Math.floor(Math.random() * 3) + 1;
-            const hpGain = Math.floor(Math.random() * 15) + 5; // 5-20 HP gain
+            const strengthGain = Math.min(5, Math.floor(Math.random() * 3) + 1);
+            const speedGain = Math.min(5, Math.floor(Math.random() * 3) + 1);
+            const sizeGain = Math.min(5, Math.floor(Math.random() * 3) + 1);
+            const venomGain = Math.min(5, Math.floor(Math.random() * 3) + 1);
+            const toughnessGain = Math.min(20, Math.floor(Math.random() * 15) + 5);
             
             spider.strength += strengthGain;
             spider.speed += speedGain;
-            spider.maxHp += hpGain;
-            spider.hp += hpGain; // Also increase current HP
+            spider.size += sizeGain;
+            spider.venom += venomGain;
+            spider.maxToughness += toughnessGain;
+            spider.toughness += toughnessGain;
             
             return {
                 strengthGain,
                 speedGain,
-                hpGain
+                sizeGain,
+                venomGain,
+                toughnessGain
             };
         }
         
@@ -1034,7 +1051,6 @@
                     gains: gains
                 });
                 
-                // Recalculate for next level
                 if (spider.xp >= calculateXpForLevel(spider.level)) {
                     continue;
                 } else {
@@ -1045,6 +1061,32 @@
             return levelUps;
         }
 
+        function changeStat(statName, delta) {
+            const statInput = document.getElementById(statName);
+            const currentValue = parseInt(statInput.value);
+            const newValue = currentValue + delta;
+            
+            const pointsCount = document.getElementById('pointsCount');
+            const currentPoints = parseInt(pointsCount.textContent);
+            
+            if (delta > 0 && currentPoints <= 0) return;
+            if (delta < 0 && newValue < 0) return;
+            if (newValue > 100) return;
+            
+            statInput.value = newValue;
+            pointsCount.textContent = currentPoints - delta;
+            
+            const remaining = parseInt(pointsCount.textContent);
+            const pointsDisplay = document.getElementById('pointsRemaining');
+            if (remaining === 0) {
+                pointsDisplay.style.borderColor = 'rgba(78, 205, 196, 0.6)';
+                pointsDisplay.style.background = 'rgba(78, 205, 196, 0.2)';
+            } else {
+                pointsDisplay.style.borderColor = 'rgba(255, 165, 0, 0.6)';
+                pointsDisplay.style.background = 'rgba(255, 165, 0, 0.2)';
+            }
+        }
+
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -1053,7 +1095,6 @@
                 return;
             }
 
-            // Check file size (max 2MB to keep gist reasonable)
             if (file.size > 2 * 1024 * 1024) {
                 alert('Image too large! Please use an image under 2MB.');
                 event.target.value = '';
@@ -1062,7 +1103,6 @@
                 return;
             }
 
-            // Check if it's an image
             if (!file.type.startsWith('image/')) {
                 alert('Please upload an image file!');
                 event.target.value = '';
@@ -1073,36 +1113,16 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                uploadedImageData = e.target.result; // Store as base64
+                uploadedImageData = e.target.result;
                 
-                // Show preview
                 const preview = document.getElementById('imagePreview');
                 const previewImg = document.getElementById('previewImg');
                 previewImg.src = uploadedImageData;
                 preview.style.display = 'block';
 
-                // Clear URL input if they uploaded a file
                 document.getElementById('spiderImage').value = '';
             };
             reader.readAsDataURL(file);
-        }
-
-        function calculateTotalPower(spider) {
-            let sum = spider.strength + spider.speed;
-            let count = 2;
-            
-            // Add custom numeric fields to power calculation
-            if (spider.customFields) {
-                for (const field of spider.customFields) {
-                    const value = parseFloat(field.value);
-                    if (!isNaN(value)) {
-                        sum += value;
-                        count++;
-                    }
-                }
-            }
-            
-            return Math.round(sum / count);
         }
         
         function addCustomField() {
@@ -1115,11 +1135,11 @@
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <div style="flex: 1;">
                             <label style="font-size: 0.9em;">Field Name:</label>
-                            <input type="text" class="custom-field-name" placeholder="e.g., Venom Level, Agility, Cuteness" style="margin-top: 5px;">
+                            <input type="text" class="custom-field-name" placeholder="e.g., Cuteness, Mood" style="margin-top: 5px;">
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 0.9em;">Value:</label>
-                            <input type="text" class="custom-field-value" placeholder="Any value (text or number)" style="margin-top: 5px;">
+                            <input type="text" class="custom-field-value" placeholder="Any value" style="margin-top: 5px;">
                         </div>
                     </div>
                     <button onclick="removeCustomField('${fieldId}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 8px 16px; font-size: 0.9em;">Remove</button>
@@ -1258,18 +1278,16 @@
             }
         }
 
-        // ===== MOVE GENERATION =====
         function generateMoves(spider) {
             const shuffled = [...MOVE_LIST].sort(() => Math.random() - 0.5);
             const moves = shuffled.slice(0, 4).map(move => ({
                 ...move,
-                power: move.basePower + Math.floor(spider.level * 3) // Level scaling: +3 power per level
+                power: move.basePower + Math.floor(spider.level * 3)
             }));
             return moves;
         }
         
         function updateMovePower(spider) {
-            // Update move power when spider levels up
             if (spider.moves) {
                 spider.moves = spider.moves.map(move => ({
                     ...move,
@@ -1278,7 +1296,6 @@
             }
         }
 
-        // ===== CONFIG & AUTH =====
         function loadConfig() {
             const saved = window.localStorage.getItem('spiderConfig');
             if (saved) {
@@ -1328,7 +1345,6 @@
                 return;
             }
             
-            // Additional warning before registration
             const confirmed = confirm(
                 '⚠️ SECURITY WARNING ⚠️\n\n' +
                 'Your password will be hashed and stored in a GitHub Gist.\n\n' +
@@ -1390,7 +1406,6 @@
             renderSpiders();
         }
 
-        // ===== DATA PERSISTENCE =====
         let saveTimeout = null;
         let pendingSave = false;
 
@@ -1430,7 +1445,6 @@
             }
         }
 
-        // Debounced save - waits 2 seconds of inactivity before saving
         function debouncedSave() {
             pendingSave = true;
             
@@ -1444,7 +1458,6 @@
             }, 2000);
         }
 
-        // Immediate save for critical operations
         async function saveData() {
             if (saveTimeout) {
                 clearTimeout(saveTimeout);
@@ -1514,7 +1527,6 @@
             }
         }
 
-        // ===== SPIDER MANAGEMENT =====
         async function addSpider() {
             if (!currentUser) {
                 showStatus('addStatus', 'Please login first!', 'error');
@@ -1526,6 +1538,9 @@
             const imageUrl = document.getElementById('spiderImage').value.trim();
             const strength = parseInt(document.getElementById('strength').value);
             const speed = parseInt(document.getElementById('speed').value);
+            const size = parseInt(document.getElementById('size').value);
+            const venom = parseInt(document.getElementById('venom').value);
+            const toughness = parseInt(document.getElementById('toughness').value);
             const customFields = getCustomFields();
 
             if (!name) {
@@ -1533,10 +1548,15 @@
                 return;
             }
 
-            // Use uploaded image if available, otherwise use URL or placeholder
+            const totalPoints = strength + speed + size + venom + toughness;
+            if (totalPoints !== 100) {
+                showStatus('addStatus', 'You must use exactly 100 stat points!', 'error');
+                return;
+            }
+
             let finalImage;
             if (uploadedImageData) {
-                finalImage = uploadedImageData; // Base64 data
+                finalImage = uploadedImageData;
             } else if (imageUrl) {
                 finalImage = imageUrl;
             } else {
@@ -1552,11 +1572,13 @@
                 ownerHistory: [currentUser],
                 strength,
                 speed,
+                size,
+                venom,
+                toughness,
+                maxToughness: toughness,
                 customFields: customFields,
                 level: 1,
                 xp: 0,
-                hp: 100,
-                maxHp: 100,
                 wins: 0,
                 losses: 0,
                 moves: null,
@@ -1572,8 +1594,12 @@
                 document.getElementById('spiderLatinName').value = '';
                 document.getElementById('spiderImage').value = '';
                 document.getElementById('spiderImageFile').value = '';
-                document.getElementById('strength').value = 50;
-                document.getElementById('speed').value = 50;
+                document.getElementById('strength').value = 20;
+                document.getElementById('speed').value = 20;
+                document.getElementById('size').value = 20;
+                document.getElementById('venom').value = 20;
+                document.getElementById('toughness').value = 20;
+                document.getElementById('pointsCount').textContent = '100';
                 document.getElementById('imagePreview').style.display = 'none';
                 uploadedImageData = null;
                 clearCustomFields();
@@ -1584,17 +1610,18 @@
             if (!confirm('Delete this spider?')) return;
             
             const spider = spiders.find(s => s.id === id);
-            if (spider && spider.owner !== currentUser && currentUser !== 'admin') {
+            if (!spider) return;
+            
+            // Only allow deletion if you own the spider OR you are admin
+            if (spider.owner !== currentUser && currentUser !== 'admin') {
                 alert('You can only delete your own spiders!');
                 return;
             }
 
             spiders = spiders.filter(s => s.id !== id);
             
-            // Update UI immediately
             renderSpiders();
             
-            // Save in background
             debouncedSave();
         }
 
@@ -1624,10 +1651,12 @@
                         ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
+                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
+                        <div class="stat"><span>Toughness:</span><span>${spider.toughness}</span></div>
                         ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
                             <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
                         `).join('') : ''}
-                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                     </div>
                 `).join('');
             }
@@ -1638,9 +1667,10 @@
                     `Previous owners: ${ownerHistory.slice(0, -1).join(' → ')}` : '';
 
                 const moveNames = spider.moves ? spider.moves.map(m => m.name).join(', ') : 'Moves will be assigned';
-                const isDead = spider.hp <= 0;
                 
-                // XP System
+                // Check if spider is dead (toughness is 0 or less)
+                const isDead = (spider.toughness !== undefined && spider.toughness <= 0);
+                
                 const currentXp = spider.xp || 0;
                 const xpNeeded = calculateXpForLevel(spider.level);
                 const xpPercent = (currentXp / xpNeeded) * 100;
@@ -1661,13 +1691,14 @@
                                 <div style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: ${xpPercent}%; transition: width 0.5s;"></div>
                             </div>
                         </div>
-                        <div class="stat ${isDead ? 'style="background: rgba(255, 87, 108, 0.2);"' : ''}"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
+                        <div class="stat ${isDead ? 'style="background: rgba(255, 87, 108, 0.2);"' : ''}"><span>Toughness:</span><span>${Math.max(0, spider.toughness || 0)}/${spider.maxToughness}</span></div>
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
+                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
                         ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
-                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
+                            <div class="stat" style="opacity: 0.6;"><span>${field.name}:</span><span>${field.value}</span></div>
                         `).join('') : ''}
-                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                         <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
                         <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
                         ${historyText ? `<div class="owner-history">${historyText}</div>` : ''}
@@ -1690,9 +1721,7 @@
             grid.innerHTML = html;
         }
 
-        // ===== BATTLE SYSTEM =====
         function isSpiderInBattle(spiderId) {
-            // Check if spider is in any active battle
             return activeBattles.some(battle => 
                 battle.playerSpiderId === spiderId || battle.enemySpiderId === spiderId
             );
@@ -1700,7 +1729,7 @@
 
         function renderBattleSelect() {
             const grid = document.getElementById('battleSelectSpiders');
-            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.hp > 0);
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.toughness > 0);
 
             if (mySpiders.length === 0) {
                 grid.innerHTML = '<p style="color: #666;">You have no healthy verified spiders to battle!</p>';
@@ -1716,8 +1745,8 @@
                         <div class="spider-name">${spider.name}</div>
                         <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
                         <div class="hp-bar">
-                            <div class="hp-fill ${spider.hp < spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(spider.hp / spider.maxHp) * 100}%">
-                                HP: ${spider.hp}/${spider.maxHp}
+                            <div class="hp-fill ${spider.toughness < spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(spider.toughness / spider.maxToughness) * 100}%">
+                                Toughness: ${spider.toughness}/${spider.maxToughness}
                             </div>
                         </div>
                         ${!inBattle ? '<button>Select for Battle</button>' : '<button disabled>Spider is Busy</button>'}
@@ -1746,7 +1775,7 @@
 
         function renderOpponents() {
             const grid = document.getElementById('battleOpponents');
-            const opponents = spiders.filter(s => s.verified && s.owner !== currentUser && s.hp > 0);
+            const opponents = spiders.filter(s => s.verified && s.owner !== currentUser && s.toughness > 0);
 
             if (opponents.length === 0) {
                 grid.innerHTML = '<p style="color: #666;">No opponents available!</p>';
@@ -1806,11 +1835,11 @@
             battleState = {
                 player: {
                     spider: { ...selectedBattleSpider },
-                    currentHp: selectedBattleSpider.hp || selectedBattleSpider.maxHp
+                    currentToughness: selectedBattleSpider.toughness || selectedBattleSpider.maxToughness
                 },
                 enemy: {
                     spider: { ...opponent },
-                    currentHp: opponent.hp || opponent.maxHp
+                    currentToughness: opponent.toughness || opponent.maxToughness
                 },
                 wager: wager,
                 turn: 'enemy',
@@ -1818,7 +1847,6 @@
                 canUseItems: true
             };
             
-            // Add to active battles
             activeBattles.push({
                 id: `battle_${Date.now()}`,
                 playerSpiderId: selectedBattleSpider.id,
@@ -1826,17 +1854,8 @@
                 startedAt: new Date().toISOString()
             });
             
-            // Ensure effects are initialized
             battleState.player.effects = initBattleEffects();
             battleState.enemy.effects = initBattleEffects();
-            
-            // Ensure spiders have proper stats
-            battleState.player.spider.strength = battleState.player.spider.strength || 50;
-            battleState.player.spider.speed = battleState.player.spider.speed || 50;
-            battleState.player.spider.maxHp = battleState.player.spider.maxHp || 100;
-            battleState.enemy.spider.strength = battleState.enemy.spider.strength || 50;
-            battleState.enemy.spider.speed = battleState.enemy.spider.speed || 50;
-            battleState.enemy.spider.maxHp = battleState.enemy.spider.maxHp || 100;
 
             battleState.log.push(`⚔️ Battle started! Wager: ${wager} coins`);
             battleState.log.push(`${battleState.player.spider.name} (Lvl ${battleState.player.spider.level}) vs ${battleState.enemy.spider.name} (Lvl ${battleState.enemy.spider.level})`);
@@ -1844,10 +1863,8 @@
             document.getElementById('battleOpponentPhase').classList.add('hidden');
             document.getElementById('battleArenaPhase').classList.remove('hidden');
             
-            // Update battle tab indicator
             updateBattleTabIndicator();
             
-            // Save active battles
             debouncedSave();
             
             renderBattle();
@@ -1870,8 +1887,8 @@
                             <p style="color: #aaa;">Owner: ${battle.enemy.spider.owner} | Lvl ${battle.enemy.spider.level}</p>
                             <img src="${battle.enemy.spider.image}" class="fighter-image" alt="${battle.enemy.spider.name}">
                             <div class="hp-bar">
-                                <div class="hp-fill ${battle.enemy.currentHp < battle.enemy.spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(battle.enemy.currentHp / battle.enemy.spider.maxHp) * 100}%">
-                                    HP: ${Math.max(0, battle.enemy.currentHp)}/${battle.enemy.spider.maxHp}
+                                <div class="hp-fill ${battle.enemy.currentToughness < battle.enemy.spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(battle.enemy.currentToughness / battle.enemy.spider.maxToughness) * 100}%">
+                                    Toughness: ${Math.max(0, battle.enemy.currentToughness)}/${battle.enemy.spider.maxToughness}
                                 </div>
                             </div>
                         </div>
@@ -1881,8 +1898,8 @@
                             <p style="color: #aaa;">Lvl ${battle.player.spider.level}</p>
                             <img src="${battle.player.spider.image}" class="fighter-image" alt="${battle.player.spider.name}">
                             <div class="hp-bar">
-                                <div class="hp-fill ${battle.player.currentHp < battle.player.spider.maxHp * 0.3 ? 'low' : ''}" style="width: ${(battle.player.currentHp / battle.player.spider.maxHp) * 100}%">
-                                    HP: ${Math.max(0, battle.player.currentHp)}/${battle.player.spider.maxHp}
+                                <div class="hp-fill ${battle.player.currentToughness < battle.player.spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(battle.player.currentToughness / battle.player.spider.maxToughness) * 100}%">
+                                    Toughness: ${Math.max(0, battle.player.currentToughness)}/${battle.player.spider.maxToughness}
                                 </div>
                             </div>
                         </div>
@@ -1900,7 +1917,7 @@
                                     ${battle.player.spider.moves.map((move, i) => `
                                         <button class="move-btn" onclick="useMove(${i})">
                                             <div class="move-name">${move.name}</div>
-                                            <div class="move-type">${move.type}</div>
+                                            <div class="move-type">${move.stat}</div>
                                             <div class="move-power">Power: ${move.power}</div>
                                         </button>
                                     `).join('')}
@@ -1952,7 +1969,6 @@
             const attacker = battleState.player;
             const defender = battleState.enemy;
             
-            // Check if charging
             if (attacker.effects.charging.active) {
                 battleState.log.push(`${attacker.spider.name} must recharge!`);
                 battleState.turn = 'enemy';
@@ -1961,7 +1977,6 @@
                 return;
             }
             
-            // Handle charge moves
             if (move.effect && move.effect.type === 'charge') {
                 attacker.effects.charging.active = true;
                 attacker.effects.charging.move = move;
@@ -1972,17 +1987,15 @@
                 return;
             }
             
-            // Apply move effects
             applyMoveEffects(move, attacker, defender, 'player');
             
             await checkBattleEnd();
         }
         
-        async function applyMoveEffects(move, attacker, defender, side) {
+        function applyMoveEffects(move, attacker, defender, side) {
             const attackerName = attacker.spider.name;
             const defenderName = defender.spider.name;
             
-            // Stat boost moves
             if (move.effect && move.effect.type === 'boost') {
                 if (move.effect.stat === 'speed') {
                     attacker.effects.speedMod += move.effect.amount;
@@ -1990,77 +2003,58 @@
                 } else if (move.effect.stat === 'strength') {
                     attacker.effects.strengthMod += move.effect.amount;
                     battleState.log.push(`${attackerName} used ${move.name}! Strength increased!`);
-                } else if (move.effect.stat === 'defense') {
-                    attacker.effects.defenseMod += move.effect.amount;
-                    battleState.log.push(`${attackerName} used ${move.name}! Defense increased!`);
                 }
-            }
-            // Accuracy down moves
-            else if (move.effect && move.effect.type === 'accuracy_down') {
+            } else if (move.effect && move.effect.type === 'accuracy_down') {
                 defender.effects.accuracyMod -= move.effect.amount;
                 battleState.log.push(`${attackerName} used ${move.name}! ${defenderName}'s accuracy fell!`);
-            }
-            // Slow/web moves
-            else if (move.effect && move.effect.type === 'slow') {
+            } else if (move.effect && move.effect.type === 'slow') {
                 const damage = calculateDamage(move, attacker, defender);
                 if (damage > 0) {
-                    defender.currentHp -= damage;
+                    defender.currentToughness -= damage;
                     battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
                 }
                 defender.effects.speedMod -= move.effect.amount;
                 battleState.log.push(`${defenderName} was slowed by webs!`);
-            }
-            // Trap moves
-            else if (move.effect && move.effect.type === 'trap') {
+            } else if (move.effect && move.effect.type === 'trap') {
                 const damage = calculateDamage(move, attacker, defender);
                 if (damage > 0) {
-                    defender.currentHp -= damage;
+                    defender.currentToughness -= damage;
                     battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
                 }
                 defender.effects.trapped = { active: true, damage: move.effect.damage, turns: move.effect.turns };
                 battleState.log.push(`${defenderName} was trapped in webs!`);
-            }
-            // Multi-hit moves
-            else if (move.effect && move.effect.type === 'multihit') {
+            } else if (move.effect && move.effect.type === 'multihit') {
                 let totalDamage = 0;
                 for (let i = 0; i < move.effect.hits; i++) {
                     const damage = calculateDamage(move, attacker, defender);
                     totalDamage += damage;
-                    defender.currentHp -= damage;
+                    defender.currentToughness -= damage;
                 }
                 battleState.log.push(`${attackerName} used ${move.name}! Hit ${move.effect.hits} times for ${totalDamage} total damage!`);
-            }
-            // Drain moves
-            else if (move.effect && move.effect.type === 'drain') {
+            } else if (move.effect && move.effect.type === 'drain') {
                 const damage = calculateDamage(move, attacker, defender);
-                defender.currentHp -= damage;
+                defender.currentToughness -= damage;
                 const healed = Math.floor(damage * move.effect.percent);
-                attacker.currentHp = Math.min(attacker.currentHp + healed, attacker.spider.maxHp);
-                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage and restored ${healed} HP!`);
-            }
-            // Recoil moves
-            else if (move.effect && move.effect.type === 'recoil') {
+                attacker.currentToughness = Math.min(attacker.currentToughness + healed, attacker.spider.maxToughness);
+                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage and restored ${healed} Toughness!`);
+            } else if (move.effect && move.effect.type === 'recoil') {
                 const damage = calculateDamage(move, attacker, defender);
-                defender.currentHp -= damage;
+                defender.currentToughness -= damage;
                 const recoil = Math.floor(damage * move.effect.percent);
-                attacker.currentHp -= recoil;
+                attacker.currentToughness -= recoil;
                 battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage but took ${recoil} recoil damage!`);
-            }
-            // Poison moves
-            else if (move.effect && move.effect.type === 'poison') {
+            } else if (move.effect && move.effect.type === 'poison') {
                 const damage = calculateDamage(move, attacker, defender);
-                defender.currentHp -= damage;
+                defender.currentToughness -= damage;
                 battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
                 
                 if (Math.random() < move.effect.chance && !defender.effects.poison.active) {
                     defender.effects.poison = { active: true, damage: move.effect.damage };
                     battleState.log.push(`${defenderName} was poisoned!`);
                 }
-            }
-            // Regular damage moves
-            else {
+            } else {
                 const damage = calculateDamage(move, attacker, defender);
-                defender.currentHp -= damage;
+                defender.currentToughness -= damage;
                 
                 const critMessage = (move.effect && move.effect.type === 'guaranteed_crit') ? ' Critical hit!' : '';
                 battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!${critMessage}`);
@@ -2068,11 +2062,11 @@
         }
         
         async function checkBattleEnd() {
-            if (battleState.enemy.currentHp <= 0) {
+            if (battleState.enemy.currentToughness <= 0) {
                 await endBattle(true);
                 return true;
             }
-            if (battleState.player.currentHp <= 0) {
+            if (battleState.player.currentToughness <= 0) {
                 await endBattle(false);
                 return true;
             }
@@ -2084,15 +2078,13 @@
         }
         
         function applyEndOfTurnEffects(fighter, name) {
-            // Poison damage
             if (fighter.effects.poison.active) {
-                fighter.currentHp -= fighter.effects.poison.damage;
+                fighter.currentToughness -= fighter.effects.poison.damage;
                 battleState.log.push(`${name} took ${fighter.effects.poison.damage} poison damage!`);
             }
             
-            // Trap damage
             if (fighter.effects.trapped.active) {
-                fighter.currentHp -= fighter.effects.trapped.damage;
+                fighter.currentToughness -= fighter.effects.trapped.damage;
                 battleState.log.push(`${name} took ${fighter.effects.trapped.damage} damage from webs!`);
                 fighter.effects.trapped.turns--;
                 if (fighter.effects.trapped.turns <= 0) {
@@ -2101,12 +2093,11 @@
                 }
             }
             
-            // Clear charging
             if (fighter.effects.charging.active) {
                 const chargeMove = fighter.effects.charging.move;
                 fighter.effects.charging.active = false;
                 fighter.effects.charging.move = null;
-                return chargeMove; // Return the charged move to use
+                return chargeMove;
             }
             
             return null;
@@ -2123,10 +2114,10 @@
             inventory[itemKey]--;
             setUserInventory(inventory);
 
-            const actualHeal = Math.min(healAmount, battleState.player.spider.maxHp - battleState.player.currentHp);
-            battleState.player.currentHp += actualHeal;
+            const actualHeal = Math.min(healAmount, battleState.player.spider.maxToughness - battleState.player.currentToughness);
+            battleState.player.currentToughness += actualHeal;
 
-            battleState.log.push(`Used ${itemKey}! Restored ${actualHeal} HP!`);
+            battleState.log.push(`Used ${itemKey}! Restored ${actualHeal} Toughness!`);
 
             battleState.turn = 'enemy';
             renderBattle();
@@ -2137,27 +2128,23 @@
             const attacker = battleState.enemy;
             const defender = battleState.player;
             
-            // Apply end of turn effects and check for charged move
             const chargedMove = applyEndOfTurnEffects(attacker, attacker.spider.name);
             applyEndOfTurnEffects(defender, defender.spider.name);
             
-            // Check if battle ended from effects
-            if (defender.currentHp <= 0) {
+            if (defender.currentToughness <= 0) {
                 await endBattle(false);
                 return;
             }
-            if (attacker.currentHp <= 0) {
+            if (attacker.currentToughness <= 0) {
                 await endBattle(true);
                 return;
             }
             
-            // Use charged move if available, otherwise pick random
             const move = chargedMove || attacker.spider.moves[Math.floor(Math.random() * attacker.spider.moves.length)];
             
-            // Apply move effects
             applyMoveEffects(move, attacker, defender, 'enemy');
             
-            if (defender.currentHp <= 0) {
+            if (defender.currentToughness <= 0) {
                 await endBattle(false);
                 return;
             }
@@ -2169,27 +2156,20 @@
         function calculateDamage(move, attacker, defender) {
             let damage = move.power;
             
-            // Get base stats, defaulting to 50 if undefined
-            const attackerStrength = (attacker.strength || 50) + (attacker.effects ? attacker.effects.strengthMod : 0);
-            const attackerSpeed = (attacker.speed || 50) + (attacker.effects ? attacker.effects.speedMod : 0);
-            const defenderDefense = (defender.strength || 50) + (defender.effects ? defender.effects.defenseMod : 0);
+            const statValue = attacker.spider[move.stat] || 0;
+            const statMod = attacker.effects[move.stat + 'Mod'] || 0;
+            const effectiveStat = statValue + statMod;
             
-            if (move.type === 'physical') {
-                damage += Math.floor(attackerStrength / 5);
-            } else if (move.type === 'speed') {
-                damage += Math.floor(attackerSpeed / 5);
-            }
+            damage += Math.floor(effectiveStat / 5);
             
-            // Apply defense
-            damage = Math.max(5, damage - Math.floor(defenderDefense / 10));
+            const defenderToughness = (defender.spider.toughness || 0) + (defender.effects.toughnessMod || 0);
+            damage = Math.max(5, damage - Math.floor(defenderToughness / 20));
             
-            // Critical hit check
             const isCrit = (move.effect && move.effect.type === 'guaranteed_crit') || Math.random() < 0.1;
             if (isCrit && move.power > 0) {
                 damage = Math.floor(damage * 1.5);
             }
             
-            // Random variance
             damage += Math.floor(Math.random() * 10) - 5;
             
             return Math.max(1, damage);
@@ -2199,13 +2179,12 @@
             const playerSpider = spiders.find(s => s.id === battleState.player.spider.id);
             const enemySpider = spiders.find(s => s.id === battleState.enemy.spider.id);
 
-            playerSpider.hp = Math.max(0, battleState.player.currentHp);
-            enemySpider.hp = Math.max(0, battleState.enemy.currentHp);
+            playerSpider.toughness = Math.max(0, battleState.player.currentToughness);
+            enemySpider.toughness = Math.max(0, battleState.enemy.currentToughness);
 
             const playerUser = users.find(u => u.username === currentUser);
             const enemyUser = users.find(u => u.username === enemySpider.owner);
 
-            // Calculate XP rewards
             const playerXp = calculateXpReward(enemySpider.level, playerWon);
             const enemyXp = calculateXpReward(playerSpider.level, !playerWon);
 
@@ -2233,7 +2212,6 @@
                 }
             }
 
-            // Award XP and check for level ups
             const playerLevelUps = addXpToSpider(playerSpider, playerXp);
             const enemyLevelUps = addXpToSpider(enemySpider, enemyXp);
 
@@ -2241,7 +2219,7 @@
             if (playerLevelUps.length > 0) {
                 playerLevelUps.forEach(lu => {
                     battleState.log.push(`🎊 ${playerSpider.name} leveled up to Level ${lu.level}!`);
-                    battleState.log.push(`  +${lu.gains.strengthGain} STR, +${lu.gains.speedGain} SPD, +${lu.gains.hpGain} HP!`);
+                    battleState.log.push(`  +${lu.gains.strengthGain} STR, +${lu.gains.speedGain} SPD, +${lu.gains.sizeGain} SIZE, +${lu.gains.venomGain} VEN, +${lu.gains.toughnessGain} TOU!`);
                 });
             }
 
@@ -2252,7 +2230,6 @@
                 });
             }
 
-            // Remove from active battles
             activeBattles = activeBattles.filter(b => 
                 b.playerSpiderId !== battleState.player.spider.id && 
                 b.enemySpiderId !== battleState.enemy.spider.id
@@ -2266,7 +2243,7 @@
                 if (playerLevelUps.length > 0) {
                     message += `\n\n🎊 ${playerSpider.name} leveled up to Level ${playerSpider.level}!`;
                     const lastLevelUp = playerLevelUps[playerLevelUps.length - 1];
-                    message += `\n+${lastLevelUp.gains.strengthGain} STR, +${lastLevelUp.gains.speedGain} SPD, +${lastLevelUp.gains.hpGain} HP!`;
+                    message += `\n+${lastLevelUp.gains.strengthGain} STR, +${lastLevelUp.gains.speedGain} SPD, +${lastLevelUp.gains.sizeGain} SIZE, +${lastLevelUp.gains.venomGain} VEN, +${lastLevelUp.gains.toughnessGain} TOU!`;
                 }
                 alert(message);
                 backToBattleSelect();
@@ -2285,7 +2262,6 @@
             battleState = null;
             selectedBattleSpider = null;
             
-            // Update battle tab indicator
             updateBattleTabIndicator();
             
             renderBattleSelect();
@@ -2294,18 +2270,15 @@
         function updateBattleTabIndicator() {
             const battleBtn = document.getElementById('battleTabBtn');
             if (battleState) {
-                // Battle in progress
                 battleBtn.innerHTML = '⚔️ Battle 🔴';
                 battleBtn.style.position = 'relative';
                 battleBtn.style.animation = 'pulse 2s infinite';
             } else {
-                // No battle
                 battleBtn.innerHTML = '⚔️ Battle';
                 battleBtn.style.animation = 'none';
             }
         }
 
-        // ===== TRADING SYSTEM =====
         function updateTradeTabIndicator() {
             const tradeBtn = document.getElementById('tradeTabBtn');
             if (!currentUser) {
@@ -2317,12 +2290,10 @@
             const incomingTrades = tradeOffers.filter(offer => offer.toUser === currentUser && offer.status === 'pending');
             
             if (incomingTrades.length > 0) {
-                // Has incoming trades
                 tradeBtn.innerHTML = `🔄 Trade 🟢 ${incomingTrades.length}`;
                 tradeBtn.style.position = 'relative';
                 tradeBtn.style.animation = 'pulse 2s infinite';
             } else {
-                // No incoming trades
                 tradeBtn.innerHTML = '🔄 Trade';
                 tradeBtn.style.animation = 'none';
             }
@@ -2459,7 +2430,7 @@
                     <img src="${spider.image}" class="spider-image" alt="${spider.name}">
                     <div class="spider-name">${spider.name}</div>
                     <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                    <div class="stat"><span>HP:</span><span>${spider.hp}/${spider.maxHp}</span></div>
+                    <div class="stat"><span>Toughness:</span><span>${spider.toughness}/${spider.maxToughness}</span></div>
                     <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
                     <button>Offer in Trade</button>
                 </div>
@@ -2492,12 +2463,10 @@
                 return;
             }
 
-            // Ask what they want in return
             const tradeType = confirm('Click OK to request a specific spider in return\nClick Cancel to just send your spider (with optional coins)');
             
             let requestedSpiderId = null;
             if (tradeType) {
-                // Show available spiders from recipient
                 const recipientSpiders = spiders.filter(s => s.owner === recipient && s.verified);
                 if (recipientSpiders.length === 0) {
                     alert('This user has no spiders to trade!');
@@ -2551,13 +2520,10 @@
 
             tradeOffers.push(offer);
 
-            // Update UI immediately
             renderTradeTab();
             
-            // Update trade indicator
             updateTradeTabIndicator();
             
-            // Save in background
             if (await saveData()) {
                 showStatus('shopStatus', 'Trade offer sent!', 'success');
             }
@@ -2576,7 +2542,6 @@
                 return;
             }
 
-            // Check if this is a spider-for-spider trade
             if (offer.requestedSpiderId) {
                 const requestedSpider = spiders.find(s => s.id === offer.requestedSpiderId);
                 if (!requestedSpider) {
@@ -2594,7 +2559,6 @@
                     return;
                 }
 
-                // Transfer both spiders
                 offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
                 offeredSpider.ownerHistory.push(currentUser);
                 offeredSpider.owner = currentUser;
@@ -2603,18 +2567,15 @@
                 requestedSpider.ownerHistory.push(offer.fromUser);
                 requestedSpider.owner = offer.fromUser;
             } else {
-                // Just receiving a spider (+ maybe coins)
                 if (!confirm(`Accept trade for ${offeredSpider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}?`)) {
                     return;
                 }
 
-                // Transfer spider
                 offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
                 offeredSpider.ownerHistory.push(currentUser);
                 offeredSpider.owner = currentUser;
             }
 
-            // Transfer coins
             if (offer.coins > 0) {
                 const fromUser = users.find(u => u.username === offer.fromUser);
                 const toUser = users.find(u => u.username === offer.toUser);
@@ -2622,17 +2583,13 @@
                 toUser.coins += offer.coins;
             }
 
-            // Mark offer as accepted
             offer.status = 'accepted';
 
-            // Update UI immediately
             renderTradeTab();
             updateCoins();
             
-            // Update trade indicator
             updateTradeTabIndicator();
             
-            // Save in background
             if (await saveData()) {
                 alert('Trade accepted!');
             }
@@ -2647,13 +2604,10 @@
 
             offer.status = 'rejected';
 
-            // Update UI immediately
             renderTradeTab();
             
-            // Update trade indicator
             updateTradeTabIndicator();
             
-            // Save in background
             debouncedSave();
         }
 
@@ -2668,18 +2622,14 @@
 
             offer.status = 'cancelled';
 
-            // Update UI immediately
             renderTradeTab();
             
-            // Update trade indicator
             updateTradeTabIndicator();
             
-            // Save in background
             debouncedSave();
         }
 
-        // ===== SHOP & INVENTORY =====
-        let isProcessingPurchase = false; // Prevent double-clicks
+        let isProcessingPurchase = false;
 
         async function useItemOnSpider(spiderId, itemKey, healAmount) {
             if (!currentUser) {
@@ -2699,16 +2649,14 @@
                 return;
             }
 
-            // Use the item
             inventory[itemKey]--;
             setUserInventory(inventory);
 
-            // Heal the spider
-            const actualHeal = Math.min(healAmount, spider.maxHp - spider.hp);
-            spider.hp = Math.min(spider.hp + healAmount, spider.maxHp);
+            const actualHeal = Math.min(healAmount, spider.maxToughness - spider.toughness);
+            spider.toughness = Math.min(spider.toughness + healAmount, spider.maxToughness);
 
             if (await saveData()) {
-                alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} HP and is now at ${spider.hp}/${spider.maxHp} HP!`);
+                alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} Toughness and is now at ${spider.toughness}/${spider.maxToughness} Toughness!`);
                 renderSpiders();
                 renderInventory();
             }
@@ -2744,7 +2692,6 @@
         }
 
         async function buyShopItem(itemKey) {
-            // Prevent rapid clicking
             if (isProcessingPurchase) {
                 showStatus('shopStatus', 'Please wait, processing...', 'error');
                 return;
@@ -2767,29 +2714,23 @@
                 return;
             }
 
-            // Check if user has enough coins
             const currentCoins = user.coins || 0;
             if (currentCoins < price) {
                 showStatus('shopStatus', `Not enough coins! You have ${currentCoins}, need ${price} coins.`, 'error');
                 return;
             }
 
-            // Lock purchasing
             isProcessingPurchase = true;
 
             try {
-                // Deduct coins
                 user.coins = currentCoins - price;
                 
-                // Initialize inventory if it doesn't exist
                 if (!user.inventory) {
                     user.inventory = {};
                 }
                 
-                // Add item to inventory
                 user.inventory[itemKey] = (user.inventory[itemKey] || 0) + 1;
 
-                // Save data
                 const saveSuccess = await saveData();
                 
                 if (saveSuccess) {
@@ -2797,7 +2738,6 @@
                     updateCoins();
                     renderInventory();
                 } else {
-                    // Rollback on save failure
                     user.coins = currentCoins;
                     user.inventory[itemKey]--;
                     if (user.inventory[itemKey] <= 0) {
@@ -2807,7 +2747,6 @@
                 }
             } catch (error) {
                 console.error('Purchase error:', error);
-                // Rollback on any error
                 user.coins = currentCoins;
                 if (user.inventory[itemKey]) {
                     user.inventory[itemKey]--;
@@ -2817,14 +2756,12 @@
                 }
                 showStatus('shopStatus', 'Purchase failed - please try again', 'error');
             } finally {
-                // Unlock purchasing after a short delay
                 setTimeout(() => {
                     isProcessingPurchase = false;
                 }, 500);
             }
         }
 
-        // ===== ADMIN FUNCTIONS =====
         function checkAdminAccess() {
             if (currentUser === 'admin') {
                 document.getElementById('adminAccessDenied').classList.add('hidden');
@@ -2839,7 +2776,6 @@
         function renderAdminPanel() {
             if (currentUser !== 'admin') return;
 
-            // Update Gist link in admin panel
             if (config.gistId) {
                 const gistUrl = `https://gist.github.com/${config.gistId}`;
                 const adminGistLink = document.getElementById('adminGistLink');
@@ -2862,10 +2798,12 @@
                         <p style="color: #aaa;">By: ${spider.owner}</p>
                         <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
                         <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
+                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
+                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
+                        <div class="stat"><span>Toughness:</span><span>${spider.toughness}</span></div>
                         ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
                             <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
                         `).join('') : ''}
-                        <div class="stat" style="background: rgba(78, 205, 196, 0.2); border: 1px solid #4ecdc4;"><span>Total Power:</span><span>${calculateTotalPower(spider)}</span></div>
                         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
                             <button onclick="verifySpider(${spider.id}, true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
                             <button onclick="verifySpider(${spider.id}, false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
@@ -2880,7 +2818,6 @@
             document.getElementById('adminPriceFullRestore').value = shopPrices.fullRestore;
             document.getElementById('adminTaglines').value = taglines.join('\n');
 
-            // Render bug reports
             document.getElementById('adminBugReports').innerHTML = renderBugReports();
 
             const usersList = document.getElementById('usersList');
@@ -2964,17 +2901,13 @@
             users = users.filter(u => u.username !== username);
             spiders = spiders.filter(s => s.owner !== username);
             
-            // Update UI immediately
             renderAdminPanel();
             
-            // Save in background
             debouncedSave();
         }
 
-        // ===== BUG REPORT SYSTEM =====
         function openBugReport() {
             document.getElementById('bugReportModal').classList.add('active');
-            // Pre-fill username if logged in
             if (currentUser) {
                 document.getElementById('bugReporterName').value = currentUser;
             }
@@ -3056,7 +2989,7 @@
 
             if (openReports.length > 0) {
                 html += '<div style="margin-bottom: 30px;">';
-                html += '<h4 style="color: #ffa500; margin-bottom: 10px;">📥 Open Reports (${openReports.length}):</h4>';
+                html += '<h4 style="color: #ffa500; margin-bottom: 10px;">📥 Open Reports:</h4>';
                 openReports.forEach((report, index) => {
                     const date = new Date(report.timestamp).toLocaleString();
                     html += `
@@ -3162,11 +3095,9 @@
             showStatus('adminStatus', 'All bug reports cleared!', 'success');
         }
 
-        // ===== INITIALIZATION =====
         loadConfig();
         updateTagline();
         
-        // Auto-save any pending changes when user leaves
         window.addEventListener('beforeunload', () => {
             if (pendingSave) {
                 saveDataNow();
