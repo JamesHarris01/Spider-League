@@ -1,451 +1,3 @@
-    <script>
-        // HAT SYSTEM
-        const HAT_EMOJIS = ['🎩', '👑', '🧢', '⛑️', '🎓', '👒', '🪖', '🎖️', '⛷️', '🏔️', '🌟', '💎', '🔮', '👾', '🎯', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🎸', '🥁', '🎻', '🎲', '🎰', '🎳'];
-        const HAT_ADJECTIVES = ['Crimson', 'Golden', 'Azure', 'Emerald', 'Obsidian', 'Crystal', 'Mystic', 'Ancient', 'Ethereal', 'Radiant', 'Shadow', 'Frost', 'Flame', 'Storm', 'Lunar', 'Solar', 'Cosmic', 'Arcane', 'Divine', 'Cursed', 'Blessed', 'Legendary', 'Epic', 'Royal', 'Imperial', 'Noble', 'Savage', 'Wild', 'Primal', 'Eternal'];
-        const HAT_NOUNS = ['Crown', 'Helm', 'Cap', 'Hat', 'Tiara', 'Circlet', 'Diadem', 'Coronet', 'Headpiece', 'Topper', 'Beret', 'Hood', 'Bandana', 'Turban', 'Headdress'];
-        const HAT_TYPES = ['of Power', 'of Wisdom', 'of Speed', 'of Strength', 'of Venom', 'of Size', 'of Dominance', 'of Glory', 'of Victory', 'of Legends', 'of Champions', 'of Heroes', 'of Kings', 'of Queens', 'of Warriors', 'of Assassins', 'of Titans', 'of Gods'];
-        
-        let dailyHats = [];
-        let hatInventory = [];
-        let savedSlots = [];
-        let currentHatFilter = 'all';
-        
-        function generateHat() {
-            const roll = Math.random();
-            let rarity, statCount, minBonus, maxBonus, priceMin, priceMax;
-            
-            if (roll < 0.50) { // 50% Common
-                rarity = 'common';
-                statCount = 1;
-                minBonus = 5;
-                maxBonus = 15;
-                priceMin = 500;
-                priceMax = 1000;
-            } else if (roll < 0.75) { // 25% Uncommon
-                rarity = 'uncommon';
-                statCount = Math.random() < 0.7 ? 1 : 2;
-                minBonus = 10;
-                maxBonus = 20;
-                priceMin = 1000;
-                priceMax = 1500;
-            } else if (roll < 0.90) { // 15% Rare
-                rarity = 'rare';
-                statCount = Math.random() < 0.5 ? 1 : 2;
-                minBonus = 15;
-                maxBonus = 30;
-                priceMin = 1500;
-                priceMax = 2000;
-            } else if (roll < 0.97) { // 7% Epic
-                rarity = 'epic';
-                statCount = Math.floor(Math.random() * 2) + 2; // 2-3
-                minBonus = 20;
-                maxBonus = 40;
-                priceMin = 2000;
-                priceMax = 2500;
-            } else if (roll < 0.999) { // 2.9% Legendary
-                rarity = 'legendary';
-                statCount = Math.floor(Math.random() * 2) + 3; // 3-4
-                minBonus = 30;
-                maxBonus = 60;
-                priceMin = 2500;
-                priceMax = 3000;
-            } else { // 0.1% Mythic
-                rarity = 'mythic';
-                statCount = 5; // All stats
-                minBonus = 50;
-                maxBonus = 100;
-                priceMin = 5000;
-                priceMax = 10000;
-            }
-            
-            const stats = { strength: 0, speed: 0, size: 0, venom: 0, toughness: 0 };
-            const statNames = ['strength', 'speed', 'size', 'venom', 'toughness'];
-            const selectedStats = [...statNames].sort(() => Math.random() - 0.5).slice(0, statCount);
-            
-            selectedStats.forEach(stat => {
-                stats[stat] = Math.floor(Math.random() * (maxBonus - minBonus + 1)) + minBonus;
-            });
-            
-            const emoji = HAT_EMOJIS[Math.floor(Math.random() * HAT_EMOJIS.length)];
-            const adj = HAT_ADJECTIVES[Math.floor(Math.random() * HAT_ADJECTIVES.length)];
-            const noun = HAT_NOUNS[Math.floor(Math.random() * HAT_NOUNS.length)];
-            const type = HAT_TYPES[Math.floor(Math.random() * HAT_TYPES.length)];
-            const name = `${adj} ${noun} ${type}`;
-            
-            const price = Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
-            
-            return {
-                id: `hat_${Date.now()}_${Math.random()}`,
-                name,
-                emoji,
-                rarity,
-                stats,
-                price,
-                purchasedBy: null,
-                purchasedAt: null,
-                pricePaid: null,
-                equippedTo: null
-            };
-        }
-        
-        function initializeDailyHats() {
-            const now = new Date();
-            const lastReset = window.localStorage.getItem('lastHatReset');
-            const today = now.toISOString().split('T')[0];
-            
-            if (lastReset !== today) {
-                // Reset time! Generate new hats for non-saved slots
-                const newDailyHats = [];
-                for (let i = 0; i < 3; i++) {
-                    if (savedSlots.includes(i) && dailyHats[i]) {
-                        // Keep saved slot
-                        newDailyHats.push(dailyHats[i]);
-                    } else {
-                        // Generate new hat
-                        newDailyHats.push(generateHat());
-                    }
-                }
-                dailyHats = newDailyHats;
-                window.localStorage.setItem('lastHatReset', today);
-            } else if (dailyHats.length === 0) {
-                // First time initialization
-                dailyHats = [generateHat(), generateHat(), generateHat()];
-            }
-        }
-        
-        function getTimeUntilMidnight() {
-            const now = new Date();
-            const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
-                                    now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-            const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
-            return midnight - utcNow;
-        }
-        
-        function updateHatCountdown() {
-            const timeLeft = getTimeUntilMidnight();
-            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-            
-            const countdownEl = document.getElementById('hatCountdown');
-            if (countdownEl) {
-                countdownEl.textContent = `Next hats in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                
-                if (hours < 5) {
-                    countdownEl.classList.add('warning');
-                } else {
-                    countdownEl.classList.remove('warning');
-                }
-            }
-            
-            // Check if we need to reset
-            if (timeLeft <= 0) {
-                const today = new Date().toISOString().split('T')[0];
-                const lastReset = window.localStorage.getItem('lastHatReset');
-                if (lastReset !== today) {
-                    initializeDailyHats();
-                    renderDailyHats();
-                }
-            }
-        }
-        
-        function getSaveCost() {
-            const savedCount = savedSlots.length;
-            if (savedCount === 0) return 50;
-            if (savedCount === 1) return 500;
-            if (savedCount === 2) return 5000;
-            return Infinity; // Can't save more than 3
-        }
-        
-        async function saveHatSlot(slotIndex) {
-            if (!currentUser) {
-                alert('Please login first!');
-                return;
-            }
-            
-            if (savedSlots.includes(slotIndex)) {
-                alert('This slot is already saved!');
-                return;
-            }
-            
-            const cost = getSaveCost();
-            const user = users.find(u => u.username === currentUser);
-            
-            if (user.coins < cost) {
-                alert(`Not enough coins! You need ${cost} coins to save this slot.`);
-                return;
-            }
-            
-            if (!confirm(`Save this hat slot for ${cost} coins?\n\nIt will stay available until you purchase it or release it.`)) {
-                return;
-            }
-            
-            user.coins -= cost;
-            savedSlots.push(slotIndex);
-            
-            await saveData();
-            updateCoins();
-            renderDailyHats();
-        }
-        
-        async function releaseHatSlot(slotIndex) {
-            if (!confirm('Release this saved slot? The hat will disappear at the next reset if not purchased.')) {
-                return;
-            }
-            
-            savedSlots = savedSlots.filter(s => s !== slotIndex);
-            await saveData();
-            renderDailyHats();
-        }
-        
-        async function purchaseHat(slotIndex) {
-            if (!currentUser) {
-                alert('Please login first!');
-                return;
-            }
-            
-            const hat = dailyHats[slotIndex];
-            const user = users.find(u => u.username === currentUser);
-            
-            if (user.coins < hat.price) {
-                alert(`Not enough coins! You need ${hat.price} coins.`);
-                return;
-            }
-            
-            if (!confirm(`Purchase ${hat.name} for ${hat.price} coins?`)) {
-                return;
-            }
-            
-            user.coins -= hat.price;
-            hat.purchasedBy = currentUser;
-            hat.purchasedAt = new Date().toISOString();
-            hat.pricePaid = hat.price;
-            
-            hatInventory.push(hat);
-            
-            // Remove from daily hats and generate new one for this slot
-            if (savedSlots.includes(slotIndex)) {
-                savedSlots = savedSlots.filter(s => s !== slotIndex);
-            }
-            dailyHats[slotIndex] = generateHat();
-            
-            await saveData();
-            updateCoins();
-            renderDailyHats();
-            renderHatInventory();
-            
-            alert(`You purchased ${hat.name}!`);
-        }
-        
-        function renderDailyHats() {
-            const container = document.getElementById('dailyHatSlots');
-            if (!container) return;
-            
-            container.innerHTML = dailyHats.map((hat, index) => {
-                const isSaved = savedSlots.includes(index);
-                const saveCost = getSaveCost();
-                const canSave = savedSlots.length < 3 && !isSaved;
-                
-                const statList = Object.entries(hat.stats)
-                    .filter(([stat, value]) => value > 0)
-                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
-                    .join(', ');
-                
-                return `
-                    <div class="hat-slot ${isSaved ? 'saved' : ''} rarity-${hat.rarity}">
-                        ${isSaved ? '<div style="background: rgba(255, 215, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px; color: #000;">🔒 SAVED</div>' : ''}
-                        <div class="hat-emoji">${hat.emoji}</div>
-                        <h3 style="color: #4ecdc4;">${hat.name}</h3>
-                        <p style="color: #ffa500; text-transform: uppercase; font-weight: bold; margin: 10px 0;">${hat.rarity}</p>
-                        <p style="color: #ddd; margin: 10px 0;">${statList}</p>
-                        <p style="color: #ffd700; font-size: 1.3em; font-weight: bold; margin: 15px 0;">💰 ${hat.price} coins</p>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                            <button onclick="purchaseHat(${index})" style="flex: 1;">Buy Hat</button>
-                            ${canSave ? `<button onclick="saveHatSlot(${index})" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #000;">💾 Save (${saveCost} coins)</button>` : ''}
-                            ${isSaved ? `<button onclick="releaseHatSlot(${index})" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Release Slot</button>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function filterHats(filter) {
-            currentHatFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                if (btn.textContent.toLowerCase().includes(filter.toLowerCase()) || 
-                    (filter === 'all' && btn.textContent === 'All Hats')) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            renderHatInventory();
-        }
-        
-        function renderHatInventory() {
-            const container = document.getElementById('hatInventory');
-            if (!container) return;
-            
-            if (!currentUser) {
-                container.innerHTML = '<p style="color: #666;">Please login to see your hats!</p>';
-                return;
-            }
-            
-            const userHats = hatInventory.filter(h => h.purchasedBy === currentUser);
-            
-            let filtered = userHats;
-            if (currentHatFilter === 'equipped') {
-                filtered = userHats.filter(h => h.equippedTo !== null);
-            } else if (currentHatFilter === 'unequipped') {
-                filtered = userHats.filter(h => h.equippedTo === null);
-            } else if (currentHatFilter !== 'all') {
-                filtered = userHats.filter(h => h.rarity === currentHatFilter);
-            }
-            
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="color: #666;">No hats match this filter.</p>';
-                return;
-            }
-            
-            container.innerHTML = filtered.map(hat => {
-                const equippedSpider = hat.equippedTo ? spiders.find(s => s.id === hat.equippedTo) : null;
-                const statList = Object.entries(hat.stats)
-                    .filter(([stat, value]) => value > 0)
-                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
-                    .join(', ');
-                
-                const purchaseDate = new Date(hat.purchasedAt).toLocaleDateString();
-                
-                return `
-                    <div class="hat-inventory-item rarity-${hat.rarity}">
-                        <div class="hat-emoji">${hat.emoji}</div>
-                        <div style="flex: 1;">
-                            <h3 style="color: #4ecdc4; margin-bottom: 5px;">${hat.name}</h3>
-                            <p style="color: #ffa500; text-transform: uppercase; font-size: 0.9em; font-weight: bold;">${hat.rarity}</p>
-                            <p style="color: #ddd; margin: 5px 0;">${statList}</p>
-                            <p style="color: #aaa; font-size: 0.85em; margin-top: 8px;">
-                                Purchased: ${purchaseDate} for ${hat.pricePaid} coins
-                            </p>
-                            ${equippedSpider ? 
-                                `<p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Equipped to: ${equippedSpider.name}</p>
-                                <button onclick="unequipHat('${hat.id}')" style="margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Remove Hat</button>` :
-                                `<button onclick="openEquipHatModal('${hat.id}')" style="margin-top: 10px;">Equip to Spider</button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function openEquipHatModal(hatId) {
-            const hat = hatInventory.find(h => h.id === hatId);
-            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
-            
-            if (mySpiders.length === 0) {
-                alert('You have no spiders to equip this hat to!');
-                return;
-            }
-            
-            const spiderList = mySpiders.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
-            const choice = prompt(`Equip ${hat.name} to which spider?\n\n${spiderList}\n\nEnter the number:`);
-            
-            if (!choice) return;
-            
-            const index = parseInt(choice) - 1;
-            if (index < 0 || index >= mySpiders.length) {
-                alert('Invalid choice!');
-                return;
-            }
-            
-            equipHatToSpider(hatId, mySpiders[index].id);
-        }
-        
-        async function equipHatToSpider(hatId, spiderId) {
-            const hat = hatInventory.find(h => h.id === hatId);
-            const spider = spiders.find(s => s.id === spiderId);
-            
-            if (!hat || !spider) return;
-            
-            // Remove hat from any other spider
-            if (spider.hatId) {
-                const oldHat = hatInventory.find(h => h.id === spider.hatId);
-                if (oldHat) oldHat.equippedTo = null;
-            }
-            
-            // Unequip this hat from any spider
-            if (hat.equippedTo) {
-                const oldSpider = spiders.find(s => s.id === hat.equippedTo);
-                if (oldSpider) oldSpider.hatId = null;
-            }
-            
-            // Equip the hat
-            hat.equippedTo = spiderId;
-            spider.hatId = hatId;
-            
-            await saveData();
-            renderHatInventory();
-            renderSpiders();
-            
-            alert(`Equipped ${hat.name} to ${spider.name}!`);
-        }
-        
-        async function unequipHat(hatId) {
-            const hat = hatInventory.find(h => h.id === hatId);
-            if (!hat) return;
-            
-            const spider = spiders.find(s => s.id === hat.equippedTo);
-            
-            hat.equippedTo = null;
-            if (spider) spider.hatId = null;
-            
-            await saveData();
-            renderHatInventory();
-            renderSpiders();
-            
-            alert('Hat removed!');
-        }
-        
-        function getSpiderWithHatStats(spider) {
-            const baseStats = {
-                strength: spider.strength,
-                speed: spider.speed,
-                size: spider.size,
-                venom: spider.venom,
-                toughness: spider.toughness,
-                maxToughness: spider.maxToughness
-            };
-            
-            if (!spider.hatId) return baseStats;
-            
-            const hat = hatInventory.find(h => h.id === spider.hatId);
-            if (!hat) return baseStats;
-            
-            return {
-                strength: baseStats.strength + (hat.stats.strength || 0),
-                speed: baseStats.speed + (hat.stats.speed || 0),
-                size: baseStats.size + (hat.stats.size || 0),
-                venom: baseStats.venom + (hat.stats.venom || 0),
-                toughness: baseStats.toughness + (hat.stats.toughness || 0),
-                maxToughness: baseStats.maxToughness + (hat.stats.toughness || 0)
-            };
-        }
-
-        
-
-document.addEventListener('DOMContentLoaded', function() {
-    try {
-        initializeDailyHats();
-        renderDailyHats();
-        renderHatInventory();
-        updateHatCountdown();
-        if (!window.__hatTimerStarted) {
-            window.__hatTimerStarted = true;
-            setInterval(updateHatCountdown, 1000);
-        }
-    } catch (e) { /* ignore bootstrap errors */ }
-});
-
-</script>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -643,11 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
             position: relative;
         }
         
-        .hat-slot.saved {
-            border-color: rgba(255, 215, 0, 0.8);
-            background: rgba(255, 215, 0, 0.1);
-        }
-        
         .hat-emoji {
             font-size: 4em;
             margin: 10px 0;
@@ -669,11 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
             font-size: 3em;
             margin: 0;
         }
-            .spider-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
+
         .spider-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
@@ -1312,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     Next hats in: --:--:--
                 </div>
                 
-                <div id="dailyHatSlots"></div>
+                <div class="spider-grid" id="dailyHatSlots"></div>
             </div>
             
             <div class="config-section">
@@ -1388,7 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p style="color: #ffa500; margin-top: 10px; font-size: 0.9em;">⚠️ Be careful when editing directly - invalid JSON will break the game!</p>
                     </div>
 
-                    <h3 style="color: #4ecdc4;">🔍 Spider Verification Queue</h3>
+                    <h3 style="color: #4ecdc4;">📋 Spider Verification Queue</h3>
                     <div id="verificationQueue" style="margin-bottom: 30px;"></div>
 
                     <h3 style="color: #4ecdc4;">⚔️ Move List Editor</h3>
@@ -1487,6 +1030,424 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
     <script>
+        // HAT SYSTEM
+        const HAT_EMOJIS = ['🎩', '👑', '🧢', '⛑️', '🎓', '👒', '🪖', '🎖️', '⛷️', '🏔️', '🌟', '💎', '🔮', '👾', '🎯', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🎸', '🥁', '🎻', '🎲', '🎰', '🎳'];
+        const HAT_ADJECTIVES = ['Crimson', 'Golden', 'Azure', 'Emerald', 'Obsidian', 'Crystal', 'Mystic', 'Ancient', 'Ethereal', 'Radiant', 'Shadow', 'Frost', 'Flame', 'Storm', 'Lunar', 'Solar', 'Cosmic', 'Arcane', 'Divine', 'Cursed', 'Blessed', 'Legendary', 'Epic', 'Royal', 'Imperial', 'Noble', 'Savage', 'Wild', 'Primal', 'Eternal'];
+        const HAT_NOUNS = ['Crown', 'Helm', 'Cap', 'Hat', 'Tiara', 'Circlet', 'Diadem', 'Coronet', 'Headpiece', 'Topper', 'Beret', 'Hood', 'Bandana', 'Turban', 'Headdress'];
+        const HAT_TYPES = ['of Power', 'of Wisdom', 'of Speed', 'of Strength', 'of Venom', 'of Size', 'of Dominance', 'of Glory', 'of Victory', 'of Legends', 'of Champions', 'of Heroes', 'of Kings', 'of Queens', 'of Warriors', 'of Assassins', 'of Titans', 'of Gods'];
+        
+        let dailyHats = [];
+        let hatInventory = [];
+        let currentHatFilter = 'all';
+        
+        function generateHat() {
+            const roll = Math.random();
+            let rarity, statCount, minBonus, maxBonus, priceMin, priceMax;
+            
+            if (roll < 0.50) { // 50% Common
+                rarity = 'common';
+                statCount = 1;
+                minBonus = 5;
+                maxBonus = 15;
+                priceMin = 500;
+                priceMax = 1000;
+            } else if (roll < 0.75) { // 25% Uncommon
+                rarity = 'uncommon';
+                statCount = Math.random() < 0.7 ? 1 : 2;
+                minBonus = 10;
+                maxBonus = 20;
+                priceMin = 1000;
+                priceMax = 1500;
+            } else if (roll < 0.90) { // 15% Rare
+                rarity = 'rare';
+                statCount = Math.random() < 0.5 ? 1 : 2;
+                minBonus = 15;
+                maxBonus = 30;
+                priceMin = 1500;
+                priceMax = 2000;
+            } else if (roll < 0.97) { // 7% Epic
+                rarity = 'epic';
+                statCount = Math.floor(Math.random() * 2) + 2; // 2-3
+                minBonus = 20;
+                maxBonus = 40;
+                priceMin = 2000;
+                priceMax = 2500;
+            } else if (roll < 0.999) { // 2.9% Legendary
+                rarity = 'legendary';
+                statCount = Math.floor(Math.random() * 2) + 3; // 3-4
+                minBonus = 30;
+                maxBonus = 60;
+                priceMin = 2500;
+                priceMax = 3000;
+            } else { // 0.1% Mythic
+                rarity = 'mythic';
+                statCount = 5; // All stats
+                minBonus = 50;
+                maxBonus = 100;
+                priceMin = 5000;
+                priceMax = 10000;
+            }
+            
+            const stats = { strength: 0, speed: 0, size: 0, venom: 0, toughness: 0 };
+            const statNames = ['strength', 'speed', 'size', 'venom', 'toughness'];
+            const selectedStats = [...statNames].sort(() => Math.random() - 0.5).slice(0, statCount);
+            
+            selectedStats.forEach(stat => {
+                stats[stat] = Math.floor(Math.random() * (maxBonus - minBonus + 1)) + minBonus;
+            });
+            
+            const emoji = HAT_EMOJIS[Math.floor(Math.random() * HAT_EMOJIS.length)];
+            const adj = HAT_ADJECTIVES[Math.floor(Math.random() * HAT_ADJECTIVES.length)];
+            const noun = HAT_NOUNS[Math.floor(Math.random() * HAT_NOUNS.length)];
+            const type = HAT_TYPES[Math.floor(Math.random() * HAT_TYPES.length)];
+            const name = `${adj} ${noun} ${type}`;
+            
+            const price = Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+            
+            return {
+                id: `hat_${Date.now()}_${Math.random()}`,
+                name,
+                emoji,
+                rarity,
+                stats,
+                price,
+                purchasedBy: null,
+                purchasedAt: null,
+                pricePaid: null,
+                equippedTo: null,
+                createdAt: new Date().toISOString()
+            };
+        }
+        
+        function initializeDailyHats() {
+            const now = new Date();
+            const lastReset = window.localStorage.getItem('lastHatReset');
+            const today = now.toISOString().split('T')[0];
+            
+            if (lastReset !== today) {
+                // Reset time! Remove unpurchased hats older than 24 hours
+                const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                dailyHats = dailyHats.filter(hat => {
+                    // Keep if purchased OR if created today
+                    return hat.purchasedBy !== null || hat.createdAt >= yesterday;
+                });
+                
+                // Generate new hats to fill empty slots (up to 3 total)
+                while (dailyHats.length < 3) {
+                    const newHat = generateHat();
+                    newHat.createdAt = now.toISOString();
+                    dailyHats.push(newHat);
+                }
+                
+                window.localStorage.setItem('lastHatReset', today);
+                saveData();
+            } else if (dailyHats.length === 0) {
+                // First time initialization
+                const hat1 = generateHat();
+                const hat2 = generateHat();
+                const hat3 = generateHat();
+                hat1.createdAt = now.toISOString();
+                hat2.createdAt = now.toISOString();
+                hat3.createdAt = now.toISOString();
+                dailyHats = [hat1, hat2, hat3];
+                saveData();
+            }
+        }
+        
+        function getTimeUntilMidnight() {
+            const now = new Date();
+            const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
+                                    now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+            const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+            return midnight - utcNow;
+        }
+        
+        function updateHatCountdown() {
+            const timeLeft = getTimeUntilMidnight();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            const countdownEl = document.getElementById('hatCountdown');
+            if (countdownEl) {
+                countdownEl.textContent = `Next hats in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (hours < 5) {
+                    countdownEl.classList.add('warning');
+                } else {
+                    countdownEl.classList.remove('warning');
+                }
+            }
+            
+            // Check if we need to reset
+            if (timeLeft <= 0) {
+                const today = new Date().toISOString().split('T')[0];
+                const lastReset = window.localStorage.getItem('lastHatReset');
+                if (lastReset !== today) {
+                    initializeDailyHats();
+                    renderDailyHats();
+                }
+            }
+        }
+        
+        async function purchaseHat(slotIndex) {
+            if (!currentUser) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const hat = dailyHats[slotIndex];
+            if (!hat) {
+                alert('Hat not found!');
+                return;
+            }
+            
+            const user = users.find(u => u.username === currentUser);
+            
+            if (user.coins < hat.price) {
+                alert(`Not enough coins! You need ${hat.price} coins.`);
+                return;
+            }
+            
+            if (!confirm(`Purchase ${hat.name} for ${hat.price} coins?`)) {
+                return;
+            }
+            
+            user.coins -= hat.price;
+            hat.purchasedBy = currentUser;
+            hat.purchasedAt = new Date().toISOString();
+            hat.pricePaid = hat.price;
+            
+            hatInventory.push(hat);
+            
+            // Remove from daily hats, leaving the slot empty
+            dailyHats.splice(slotIndex, 1);
+            
+            await saveData();
+            updateCoins();
+            renderDailyHats();
+            renderHatInventory();
+            
+            alert(`You purchased ${hat.name}!`);
+        }
+        
+        function renderDailyHats() {
+            const container = document.getElementById('dailyHatSlots');
+            if (!container) return;
+            
+            // Ensure we always show 3 slots
+            const slotsToShow = [];
+            for (let i = 0; i < 3; i++) {
+                if (dailyHats[i]) {
+                    slotsToShow.push({ hat: dailyHats[i], index: i });
+                } else {
+                    slotsToShow.push({ hat: null, index: i });
+                }
+            }
+            
+            container.innerHTML = slotsToShow.map(({ hat, index }) => {
+                if (!hat) {
+                    return `
+                        <div class="hat-slot" style="border: 2px dashed rgba(255, 255, 255, 0.3); opacity: 0.5;">
+                            <div class="hat-emoji" style="font-size: 3em;">❓</div>
+                            <h3 style="color: #666;">Empty Slot</h3>
+                            <p style="color: #888; margin: 10px 0;">Check back after reset!</p>
+                        </div>
+                    `;
+                }
+                
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                return `
+                    <div class="hat-slot rarity-${hat.rarity}">
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <h3 style="color: #4ecdc4;">${hat.name}</h3>
+                        <p style="color: #ffa500; text-transform: uppercase; font-weight: bold; margin: 10px 0;">${hat.rarity}</p>
+                        <p style="color: #ddd; margin: 10px 0;">${statList}</p>
+                        <p style="color: #ffd700; font-size: 1.3em; font-weight: bold; margin: 15px 0;">💰 ${hat.price} coins</p>
+                        <button onclick="purchaseHat(${index})">Buy Hat</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterHats(filter) {
+            currentHatFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(filter.toLowerCase()) || 
+                    (filter === 'all' && btn.textContent === 'All Hats')) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            renderHatInventory();
+        }
+        
+        function renderHatInventory() {
+            const container = document.getElementById('hatInventory');
+            if (!container) return;
+            
+            if (!currentUser) {
+                container.innerHTML = '<p style="color: #666;">Please login to see your hats!</p>';
+                return;
+            }
+            
+            const userHats = hatInventory.filter(h => h.purchasedBy === currentUser);
+            
+            let filtered = userHats;
+            if (currentHatFilter === 'equipped') {
+                filtered = userHats.filter(h => h.equippedTo !== null);
+            } else if (currentHatFilter === 'unequipped') {
+                filtered = userHats.filter(h => h.equippedTo === null);
+            } else if (currentHatFilter !== 'all') {
+                filtered = userHats.filter(h => h.rarity === currentHatFilter);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No hats match this filter.</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(hat => {
+                const equippedSpider = hat.equippedTo ? spiders.find(s => s.id === hat.equippedTo) : null;
+                const statList = Object.entries(hat.stats)
+                    .filter(([stat, value]) => value > 0)
+                    .map(([stat, value]) => `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`)
+                    .join(', ');
+                
+                const purchaseDate = new Date(hat.purchasedAt).toLocaleDateString();
+                
+                return `
+                    <div class="hat-inventory-item rarity-${hat.rarity}">
+                        <div class="hat-emoji">${hat.emoji}</div>
+                        <div style="flex: 1;">
+                            <h3 style="color: #4ecdc4; margin-bottom: 5px;">${hat.name}</h3>
+                            <p style="color: #ffa500; text-transform: uppercase; font-size: 0.9em; font-weight: bold;">${hat.rarity}</p>
+                            <p style="color: #ddd; margin: 5px 0;">${statList}</p>
+                            <p style="color: #aaa; font-size: 0.85em; margin-top: 8px;">
+                                Purchased: ${purchaseDate} for ${hat.pricePaid} coins
+                            </p>
+                            ${equippedSpider ? 
+                                `<p style="color: #4ecdc4; font-size: 0.9em; margin-top: 5px;">✓ Equipped to: ${equippedSpider.name}</p>
+                                <button onclick="unequipHat('${hat.id}')" style="margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Remove Hat</button>` :
+                                `<button onclick="openEquipHatModal('${hat.id}')" style="margin-top: 10px;">Equip to Spider</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openEquipHatModal(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
+            
+            if (mySpiders.length === 0) {
+                alert('You have no spiders to equip this hat to!');
+                return;
+            }
+            
+            const spiderList = mySpiders.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+            const choice = prompt(`Equip ${hat.name} to which spider?\n\n${spiderList}\n\nEnter the number:`);
+            
+            if (!choice) return;
+            
+            const index = parseInt(choice) - 1;
+            if (index < 0 || index >= mySpiders.length) {
+                alert('Invalid choice!');
+                return;
+            }
+            
+            equipHatToSpider(hatId, mySpiders[index].id);
+        }
+        
+        async function equipHatToSpider(hatId, spiderId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            const spider = spiders.find(s => s.id === spiderId);
+            
+            if (!hat || !spider) return;
+            
+            // Remove hat from any other spider
+            if (spider.hatId) {
+                const oldHat = hatInventory.find(h => h.id === spider.hatId);
+                if (oldHat) oldHat.equippedTo = null;
+            }
+            
+            // Unequip this hat from any spider
+            if (hat.equippedTo) {
+                const oldSpider = spiders.find(s => s.id === hat.equippedTo);
+                if (oldSpider) oldSpider.hatId = null;
+            }
+            
+            // Equip the hat
+            hat.equippedTo = spiderId;
+            spider.hatId = hatId;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert(`Equipped ${hat.name} to ${spider.name}!`);
+        }
+        
+        async function unequipHat(hatId) {
+            const hat = hatInventory.find(h => h.id === hatId);
+            if (!hat) return;
+            
+            const spider = spiders.find(s => s.id === hat.equippedTo);
+            
+            hat.equippedTo = null;
+            if (spider) spider.hatId = null;
+            
+            await saveData();
+            renderHatInventory();
+            renderSpiders();
+            
+            alert('Hat removed!');
+        }
+        
+        function getSpiderWithHatStats(spider) {
+            const baseStats = {
+                strength: spider.strength,
+                speed: spider.speed,
+                size: spider.size,
+                venom: spider.venom,
+                toughness: spider.toughness,
+                maxToughness: spider.maxToughness
+            };
+            
+            if (!spider.hatId) return baseStats;
+            
+            const hat = hatInventory.find(h => h.id === spider.hatId);
+            if (!hat) return baseStats;
+            
+            return {
+                strength: baseStats.strength + (hat.stats.strength || 0),
+                speed: baseStats.speed + (hat.stats.speed || 0),
+                size: baseStats.size + (hat.stats.size || 0),
+                venom: baseStats.venom + (hat.stats.venom || 0),
+                toughness: baseStats.toughness + (hat.stats.toughness || 0),
+                maxToughness: baseStats.maxToughness + (hat.stats.toughness || 0)
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                initializeDailyHats();
+                renderDailyHats();
+                renderHatInventory();
+                updateHatCountdown();
+                if (!window.__hatTimerStarted) {
+                    window.__hatTimerStarted = true;
+                    setInterval(updateHatCountdown, 1000);
+                }
+            } catch (e) { /* ignore bootstrap errors */ }
+        });
+
         // Move list with stat-based scaling
         let MOVE_LIST = [
             // Strength-based moves
@@ -1766,15 +1727,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('tradeTab').classList.add('active');
                 renderTradeTab();
                 updateTradeTabIndicator();
-        } else if (tab === 'hats') {
-    document.getElementById('hatsTab').classList.add('active');
-    try {
-        initializeDailyHats();
-        renderDailyHats();
-        renderHatInventory();
-    } catch (e) { /* no-op if not loaded yet */ }
-} else if (tab === 'shop') {
-
+            } else if (tab === 'hats') {
+                document.getElementById('hatsTab').classList.add('active');
+                try {
+                    initializeDailyHats();
+                    renderDailyHats();
+                    renderHatInventory();
+                } catch (e) { /* no-op if not loaded yet */ }
+            } else if (tab === 'shop') {
                 document.getElementById('shopTab').classList.add('active');
                 updateShopPrices();
                 renderInventory();
@@ -1968,6 +1928,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showUserInfo();
                 showStatus('loginStatus', 'Logged in successfully!', 'success');
                 renderSpiders();
+                renderHatInventory();
             } else {
                 showStatus('loginStatus', 'Invalid username or password!', 'error');
             }
@@ -1982,6 +1943,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('adminTab').classList.add('hidden');
             updateCoins();
             renderSpiders();
+            renderHatInventory();
         }
 
         let saveTimeout = null;
@@ -2011,6 +1973,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 tradeOffers = content.tradeOffers || [];
                 bugReports = content.bugReports || [];
                 activeBattles = content.activeBattles || [];
+                dailyHats = content.dailyHats || [];
+                hatInventory = content.hatInventory || [];
                 
                 renderSpiders();
                 updateCoins();
@@ -2018,6 +1982,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderInventory();
                 updateTagline();
                 updateTradeTabIndicator();
+                renderDailyHats();
+                renderHatInventory();
             } catch (error) {
                 console.error('Load error:', error);
             }
@@ -2049,7 +2015,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
 
-            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports, activeBattles };
+            const data = { spiders, users, shopPrices, moveList: MOVE_LIST, taglines, tradeOffers, bugReports, activeBattles, dailyHats, hatInventory };
 
             try {
                 if (!config.gistId) {
@@ -2104,1583 +2070,3 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         }
-
-        async function addSpider() {
-            if (!currentUser) {
-                showStatus('addStatus', 'Please login first!', 'error');
-                return;
-            }
-
-            const name = document.getElementById('spiderName').value.trim();
-            const latinName = document.getElementById('spiderLatinName').value.trim();
-            const imageUrl = document.getElementById('spiderImage').value.trim();
-            const strength = parseInt(document.getElementById('strength').value);
-            const speed = parseInt(document.getElementById('speed').value);
-            const size = parseInt(document.getElementById('size').value);
-            const venom = parseInt(document.getElementById('venom').value);
-            const toughness = parseInt(document.getElementById('toughness').value);
-            const customFields = getCustomFields();
-
-            if (!name) {
-                showStatus('addStatus', 'Please enter a spider name!', 'error');
-                return;
-            }
-
-            const totalPoints = strength + speed + size + venom + toughness;
-            if (totalPoints !== 100) {
-                showStatus('addStatus', 'You must use exactly 100 stat points!', 'error');
-                return;
-            }
-
-            let finalImage;
-            if (uploadedImageData) {
-                finalImage = uploadedImageData;
-            } else if (imageUrl) {
-                finalImage = imageUrl;
-            } else {
-                finalImage = 'https://via.placeholder.com/300x200?text=Spider';
-            }
-
-            const spider = {
-                id: Date.now(),
-                name,
-                latinName: latinName || null,
-                image: finalImage,
-                owner: currentUser,
-                ownerHistory: [currentUser],
-                strength,
-                speed,
-                size,
-                venom,
-                toughness,
-                maxToughness: toughness,
-                customFields: customFields,
-                level: 1,
-                xp: 0,
-                wins: 0,
-                losses: 0,
-                moves: null,
-                verified: false,
-                pending: true
-            };
-
-            spiders.push(spider);
-
-            if (await saveData()) {
-                showStatus('addStatus', 'Spider submitted for admin approval!', 'success');
-                document.getElementById('spiderName').value = '';
-                document.getElementById('spiderLatinName').value = '';
-                document.getElementById('spiderImage').value = '';
-                document.getElementById('spiderImageFile').value = '';
-                document.getElementById('strength').value = 20;
-                document.getElementById('speed').value = 20;
-                document.getElementById('size').value = 20;
-                document.getElementById('venom').value = 20;
-                document.getElementById('toughness').value = 20;
-                document.getElementById('pointsCount').textContent = '100';
-                document.getElementById('imagePreview').style.display = 'none';
-                uploadedImageData = null;
-                clearCustomFields();
-            }
-        }
-
-        async function deleteSpider(id) {
-            if (!confirm('Delete this spider?')) return;
-            
-            const spider = spiders.find(s => s.id === id);
-            if (!spider) return;
-            
-            // Only allow deletion if you own the spider OR you are admin
-            if (spider.owner !== currentUser && currentUser !== 'admin') {
-                alert('You can only delete your own spiders!');
-                return;
-            }
-
-            spiders = spiders.filter(s => s.id !== id);
-            
-            renderSpiders();
-            
-            debouncedSave();
-        }
-
-        function renderSpiders() {
-            const grid = document.getElementById('spiderGrid');
-            
-            let filtered = spiders.filter(s => s.verified);
-            if (currentFilter === 'mine') {
-                filtered = filtered.filter(s => s.owner === currentUser);
-            }
-
-            const pendingSpiders = spiders.filter(s => s.pending && !s.verified && s.owner === currentUser);
-
-            if (filtered.length === 0 && pendingSpiders.length === 0) {
-                grid.innerHTML = '<p style="color: #666;">No spiders to display.</p>';
-                return;
-            }
-
-            let html = '';
-
-            if (pendingSpiders.length > 0) {
-                html += pendingSpiders.map(spider => `
-                    <div class="spider-card" style="border: 2px solid rgba(255, 165, 0, 0.8);">
-                        <div style="background: rgba(255, 165, 0, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⏳ Pending Approval</div>
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                        <div class="spider-name">${spider.name}</div>
-                        ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
-                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
-                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
-                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
-                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
-                        <div class="stat"><span>Toughness:</span><span>${spider.toughness}</span></div>
-                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
-                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
-                        `).join('') : ''}
-                    </div>
-                `).join('');
-            }
-
-            html += filtered.map(spider => {
-                const ownerHistory = spider.ownerHistory || [spider.owner];
-                const historyText = ownerHistory.length > 1 ? 
-                    `Previous owners: ${ownerHistory.slice(0, -1).join(' → ')}` : '';
-
-                const moveNames = spider.moves ? spider.moves.map(m => m.name).join(', ') : 'Moves will be assigned';
-                
-                // Check if spider is dead (toughness is 0 or less)
-                const isDead = (spider.toughness !== undefined && spider.toughness <= 0);
-                
-                const currentXp = spider.xp || 0;
-                const xpNeeded = calculateXpForLevel(spider.level);
-                const xpPercent = (currentXp / xpNeeded) * 100;
-
-                return `
-                    <div class="spider-card" style="${isDead ? 'opacity: 0.6; border: 2px solid rgba(255, 87, 108, 0.5);' : ''}">
-                        ${isDead ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">💀 FAINTED</div>' : ''}
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}" style="${isDead ? 'filter: grayscale(100%);' : ''}">
-                        <div class="spider-name">${spider.name}</div>
-                        ${spider.latinName ? `<div style="font-style: italic; color: #aaa; font-size: 0.9em; margin-bottom: 8px;">${spider.latinName}</div>` : ''}
-                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                        <div style="margin: 8px 0;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                                <span style="font-size: 0.85em; color: #aaa;">XP to Next Level:</span>
-                                <span style="font-size: 0.85em; color: #4ecdc4;">${currentXp} / ${xpNeeded}</span>
-                            </div>
-                            <div style="width: 100%; height: 8px; background: rgba(0, 0, 0, 0.5); border-radius: 10px; overflow: hidden;">
-                                <div style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: ${xpPercent}%; transition: width 0.5s;"></div>
-                            </div>
-                        </div>
-                        <div class="stat ${isDead ? 'style="background: rgba(255, 87, 108, 0.2);"' : ''}"><span>Toughness:</span><span>${Math.max(0, spider.toughness || 0)}/${spider.maxToughness}</span></div>
-                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
-                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
-                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
-                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
-                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
-                            <div class="stat" style="opacity: 0.6;"><span>${field.name}:</span><span>${field.value}</span></div>
-                        `).join('') : ''}
-                        <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
-                        <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
-                        ${historyText ? `<div class="owner-history">${historyText}</div>` : ''}
-                        <div class="move-list">Moves: ${moveNames}</div>
-                        ${(spider.owner === currentUser && isDead) ? `
-                            <div style="background: rgba(255, 165, 0, 0.2); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                                <p style="color: #ffa500; font-size: 0.9em; margin-bottom: 8px;">💊 Revive Spider:</p>
-                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    <button onclick="useItemOnSpider(${spider.id}, 'potion', 20)" style="flex: 1; padding: 8px; font-size: 0.85em;">Potion (+20)</button>
-                                    <button onclick="useItemOnSpider(${spider.id}, 'superPotion', 50)" style="flex: 1; padding: 8px; font-size: 0.85em;">Super (+50)</button>
-                                    <button onclick="useItemOnSpider(${spider.id}, 'fullRestore', 999)" style="flex: 1; padding: 8px; font-size: 0.85em;">Full Restore</button>
-                                </div>
-                            </div>
-                        ` : ''}
-                        ${spider.owner === currentUser || currentUser === 'admin' ? `<button onclick="deleteSpider(${spider.id})" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
-                    </div>
-                `;
-            }).join('');
-
-            grid.innerHTML = html;
-        }
-
-        function isSpiderInBattle(spiderId) {
-            return activeBattles.some(battle => 
-                battle.playerSpiderId === spiderId || battle.enemySpiderId === spiderId
-            );
-        }
-
-        function renderBattleSelect() {
-            const grid = document.getElementById('battleSelectSpiders');
-            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified && s.toughness > 0);
-
-            if (mySpiders.length === 0) {
-                grid.innerHTML = '<p style="color: #666;">You have no healthy verified spiders to battle!</p>';
-                return;
-            }
-
-            grid.innerHTML = mySpiders.map(spider => {
-                const inBattle = isSpiderInBattle(spider.id);
-                return `
-                    <div class="spider-card" style="cursor: ${inBattle ? 'not-allowed' : 'pointer'}; opacity: ${inBattle ? '0.5' : '1'};" ${!inBattle ? `onclick="selectBattleSpider(${spider.id})"` : ''}>
-                        ${inBattle ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⚔️ In Battle</div>' : ''}
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                        <div class="spider-name">${spider.name}</div>
-                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                        <div class="hp-bar">
-                            <div class="hp-fill ${spider.toughness < spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(spider.toughness / spider.maxToughness) * 100}%">
-                                Toughness: ${spider.toughness}/${spider.maxToughness}
-                            </div>
-                        </div>
-                        ${!inBattle ? '<button>Select for Battle</button>' : '<button disabled>Spider is Busy</button>'}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function selectBattleSpider(spiderId) {
-            const spider = spiders.find(s => s.id === spiderId);
-            
-            if (isSpiderInBattle(spiderId)) {
-                alert('This spider is already in a battle!');
-                return;
-            }
-            
-            selectedBattleSpider = spider;
-            if (!selectedBattleSpider.moves) {
-                selectedBattleSpider.moves = generateMoves(selectedBattleSpider);
-            }
-            
-            document.getElementById('battleSelectPhase').classList.add('hidden');
-            document.getElementById('battleOpponentPhase').classList.remove('hidden');
-            renderOpponents();
-        }
-
-        function renderOpponents() {
-            const grid = document.getElementById('battleOpponents');
-            const opponents = spiders.filter(s => s.verified && s.owner !== currentUser && s.toughness > 0);
-
-            if (opponents.length === 0) {
-                grid.innerHTML = '<p style="color: #666;">No opponents available!</p>';
-                return;
-            }
-
-            grid.innerHTML = opponents.map(spider => {
-                const inBattle = isSpiderInBattle(spider.id);
-                return `
-                    <div class="spider-card" style="cursor: ${inBattle ? 'not-allowed' : 'pointer'}; opacity: ${inBattle ? '0.5' : '1'};" ${!inBattle ? `onclick="proposeWager(${spider.id})"` : ''}>
-                        ${inBattle ? '<div style="background: rgba(255, 87, 108, 0.9); padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px; font-size: 12px;">⚔️ In Battle</div>' : ''}
-                        <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                        <div class="spider-name">${spider.name}</div>
-                        <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                        <div class="stat"><span>Owner:</span><span>${spider.owner}</span></div>
-                        <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
-                        ${!inBattle ? '<button>Challenge!</button>' : '<button disabled>Spider is Busy</button>'}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function proposeWager(opponentId) {
-            const opponent = spiders.find(s => s.id === opponentId);
-            
-            if (isSpiderInBattle(opponentId)) {
-                alert('This spider is already in a battle!');
-                return;
-            }
-            
-            const userCoins = users.find(u => u.username === currentUser).coins || 0;
-            
-            const wager = prompt(`Battle wager?\n\nYou have ${userCoins} coins.\nEnter amount to wager (0 for no wager):`);
-            
-            if (wager === null) return;
-            
-            const wagerAmount = parseInt(wager) || 0;
-            
-            if (wagerAmount > userCoins) {
-                alert('You don\'t have enough coins!');
-                return;
-            }
-            
-            if (wagerAmount < 0) {
-                alert('Invalid wager amount!');
-                return;
-            }
-            
-            startBattle(opponent, wagerAmount);
-        }
-
-        function startBattle(opponent, wager) {
-            if (!opponent.moves) {
-                opponent.moves = generateMoves(opponent);
-            }
-
-            battleState = {
-                player: {
-                    spider: { ...selectedBattleSpider },
-                    currentToughness: selectedBattleSpider.toughness || selectedBattleSpider.maxToughness
-                },
-                enemy: {
-                    spider: { ...opponent },
-                    currentToughness: opponent.toughness || opponent.maxToughness
-                },
-                wager: wager,
-                turn: 'enemy',
-                log: [],
-                canUseItems: true
-            };
-            
-            activeBattles.push({
-                id: `battle_${Date.now()}`,
-                playerSpiderId: selectedBattleSpider.id,
-                enemySpiderId: opponent.id,
-                startedAt: new Date().toISOString()
-            });
-            
-            battleState.player.effects = initBattleEffects();
-            battleState.enemy.effects = initBattleEffects();
-
-            battleState.log.push(`⚔️ Battle started! Wager: ${wager} coins`);
-            battleState.log.push(`${battleState.player.spider.name} (Lvl ${battleState.player.spider.level}) vs ${battleState.enemy.spider.name} (Lvl ${battleState.enemy.spider.level})`);
-
-            document.getElementById('battleOpponentPhase').classList.add('hidden');
-            document.getElementById('battleArenaPhase').classList.remove('hidden');
-            
-            updateBattleTabIndicator();
-            
-            debouncedSave();
-            
-            renderBattle();
-            
-            if (battleState.turn === 'enemy') {
-                setTimeout(() => enemyTurn(), 2000);
-            }
-        }
-
-        function renderBattle() {
-            const arena = document.getElementById('battleArenaPhase');
-            const battle = battleState;
-
-            arena.innerHTML = `
-                <button onclick="backToBattleSelect()">← Back to Selection</button>
-                <div class="battle-arena">
-                    <div class="battle-field">
-                        <div class="fighter">
-                            <h3 style="color: #f5576c;">${battle.enemy.spider.name} (Enemy)</h3>
-                            <p style="color: #aaa;">Owner: ${battle.enemy.spider.owner} | Lvl ${battle.enemy.spider.level}</p>
-                            <img src="${battle.enemy.spider.image}" class="fighter-image" alt="${battle.enemy.spider.name}">
-                            <div class="hp-bar">
-                                <div class="hp-fill ${battle.enemy.currentToughness < battle.enemy.spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(battle.enemy.currentToughness / battle.enemy.spider.maxToughness) * 100}%">
-                                    Toughness: ${Math.max(0, battle.enemy.currentToughness)}/${battle.enemy.spider.maxToughness}
-                                </div>
-                            </div>
-                        </div>
-                        <div style="text-align: center; align-self: center; font-size: 3em;">⚔️</div>
-                        <div class="fighter">
-                            <h3 style="color: #4ecdc4;">${battle.player.spider.name} (You)</h3>
-                            <p style="color: #aaa;">Lvl ${battle.player.spider.level}</p>
-                            <img src="${battle.player.spider.image}" class="fighter-image" alt="${battle.player.spider.name}">
-                            <div class="hp-bar">
-                                <div class="hp-fill ${battle.player.currentToughness < battle.player.spider.maxToughness * 0.3 ? 'low' : ''}" style="width: ${(battle.player.currentToughness / battle.player.spider.maxToughness) * 100}%">
-                                    Toughness: ${Math.max(0, battle.player.currentToughness)}/${battle.player.spider.maxToughness}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="battle-log">
-                        ${battle.log.map(entry => `<div class="battle-log-entry">${entry}</div>`).join('')}
-                    </div>
-
-                    ${battle.turn === 'player' ? `
-                        <div class="battle-actions">
-                            <div class="action-section">
-                                <h3>⚔️ Moves</h3>
-                                <div class="move-grid">
-                                    ${battle.player.spider.moves.map((move, i) => `
-                                        <button class="move-btn" onclick="useMove(${i})">
-                                            <div class="move-name">${move.name}</div>
-                                            <div class="move-type">${move.stat}</div>
-                                            <div class="move-power">Power: ${move.power}</div>
-                                        </button>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            <div class="action-section">
-                                <h3>🎒 Items</h3>
-                                ${renderBattleItems()}
-                                <h3 style="margin-top: 15px;">🏳️ Options</h3>
-                                <button onclick="forfeitBattle()" style="width: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Forfeit Battle</button>
-                            </div>
-                        </div>
-                    ` : `
-                        <p style="text-align: center; color: #ffa500; font-size: 1.2em; margin: 20px 0;">
-                            ${battle.turn === 'enemy' ? 'Enemy is choosing their move...' : 'Processing...'}
-                        </p>
-                    `}
-                </div>
-            `;
-
-            const logElement = arena.querySelector('.battle-log');
-            if (logElement) {
-                logElement.scrollTop = logElement.scrollHeight;
-            }
-        }
-
-        function renderBattleItems() {
-            const inventory = getUserInventory();
-            const items = [
-                { key: 'potion', name: 'Potion', heal: 20 },
-                { key: 'superPotion', name: 'Super Potion', heal: 50 },
-                { key: 'fullRestore', name: 'Full Restore', heal: 999 }
-            ];
-
-            const html = items.map(item => {
-                const count = inventory[item.key] || 0;
-                return `
-                    <button class="item-btn" onclick="useItem('${item.key}', ${item.heal})" ${count === 0 ? 'disabled' : ''}>
-                        ${item.name} (${count})
-                    </button>
-                `;
-            }).join('');
-
-            return html || '<p style="color: #666;">No items</p>';
-        }
-
-        async function useMove(moveIndex) {
-            const move = battleState.player.spider.moves[moveIndex];
-            const attacker = battleState.player;
-            const defender = battleState.enemy;
-            
-            if (attacker.effects.charging.active) {
-                battleState.log.push(`${attacker.spider.name} must recharge!`);
-                battleState.turn = 'enemy';
-                renderBattle();
-                setTimeout(() => enemyTurn(), 2000);
-                return;
-            }
-            
-            if (move.effect && move.effect.type === 'charge') {
-                attacker.effects.charging.active = true;
-                attacker.effects.charging.move = move;
-                battleState.log.push(`${attacker.spider.name} is charging ${move.name}!`);
-                battleState.turn = 'enemy';
-                renderBattle();
-                setTimeout(() => enemyTurn(), 2000);
-                return;
-            }
-            
-            applyMoveEffects(move, attacker, defender, 'player');
-            
-            await checkBattleEnd();
-        }
-        
-        function applyMoveEffects(move, attacker, defender, side) {
-            const attackerName = attacker.spider.name;
-            const defenderName = defender.spider.name;
-            
-            if (move.effect && move.effect.type === 'boost') {
-                if (move.effect.stat === 'speed') {
-                    attacker.effects.speedMod += move.effect.amount;
-                    battleState.log.push(`${attackerName} used ${move.name}! Speed increased!`);
-                } else if (move.effect.stat === 'strength') {
-                    attacker.effects.strengthMod += move.effect.amount;
-                    battleState.log.push(`${attackerName} used ${move.name}! Strength increased!`);
-                }
-            } else if (move.effect && move.effect.type === 'accuracy_down') {
-                defender.effects.accuracyMod -= move.effect.amount;
-                battleState.log.push(`${attackerName} used ${move.name}! ${defenderName}'s accuracy fell!`);
-            } else if (move.effect && move.effect.type === 'slow') {
-                const damage = calculateDamage(move, attacker, defender);
-                if (damage > 0) {
-                    defender.currentToughness -= damage;
-                    battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
-                }
-                defender.effects.speedMod -= move.effect.amount;
-                battleState.log.push(`${defenderName} was slowed by webs!`);
-            } else if (move.effect && move.effect.type === 'trap') {
-                const damage = calculateDamage(move, attacker, defender);
-                if (damage > 0) {
-                    defender.currentToughness -= damage;
-                    battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
-                }
-                defender.effects.trapped = { active: true, damage: move.effect.damage, turns: move.effect.turns };
-                battleState.log.push(`${defenderName} was trapped in webs!`);
-            } else if (move.effect && move.effect.type === 'multihit') {
-                let totalDamage = 0;
-                for (let i = 0; i < move.effect.hits; i++) {
-                    const damage = calculateDamage(move, attacker, defender);
-                    totalDamage += damage;
-                    defender.currentToughness -= damage;
-                }
-                battleState.log.push(`${attackerName} used ${move.name}! Hit ${move.effect.hits} times for ${totalDamage} total damage!`);
-            } else if (move.effect && move.effect.type === 'drain') {
-                const damage = calculateDamage(move, attacker, defender);
-                defender.currentToughness -= damage;
-                const healed = Math.floor(damage * move.effect.percent);
-                attacker.currentToughness = Math.min(attacker.currentToughness + healed, attacker.spider.maxToughness);
-                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage and restored ${healed} Toughness!`);
-            } else if (move.effect && move.effect.type === 'recoil') {
-                const damage = calculateDamage(move, attacker, defender);
-                defender.currentToughness -= damage;
-                const recoil = Math.floor(damage * move.effect.percent);
-                attacker.currentToughness -= recoil;
-                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage but took ${recoil} recoil damage!`);
-            } else if (move.effect && move.effect.type === 'poison') {
-                const damage = calculateDamage(move, attacker, defender);
-                defender.currentToughness -= damage;
-                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!`);
-                
-                if (Math.random() < move.effect.chance && !defender.effects.poison.active) {
-                    defender.effects.poison = { active: true, damage: move.effect.damage };
-                    battleState.log.push(`${defenderName} was poisoned!`);
-                }
-            } else {
-                const damage = calculateDamage(move, attacker, defender);
-                defender.currentToughness -= damage;
-                
-                const critMessage = (move.effect && move.effect.type === 'guaranteed_crit') ? ' Critical hit!' : '';
-                battleState.log.push(`${attackerName} used ${move.name}! Dealt ${damage} damage!${critMessage}`);
-            }
-        }
-        
-        async function checkBattleEnd() {
-            if (battleState.enemy.currentToughness <= 0) {
-                await endBattle(true);
-                return true;
-            }
-            if (battleState.player.currentToughness <= 0) {
-                await endBattle(false);
-                return true;
-            }
-            
-            battleState.turn = 'enemy';
-            renderBattle();
-            setTimeout(() => enemyTurn(), 2000);
-            return false;
-        }
-        
-        function applyEndOfTurnEffects(fighter, name) {
-            if (fighter.effects.poison.active) {
-                fighter.currentToughness -= fighter.effects.poison.damage;
-                battleState.log.push(`${name} took ${fighter.effects.poison.damage} poison damage!`);
-            }
-            
-            if (fighter.effects.trapped.active) {
-                fighter.currentToughness -= fighter.effects.trapped.damage;
-                battleState.log.push(`${name} took ${fighter.effects.trapped.damage} damage from webs!`);
-                fighter.effects.trapped.turns--;
-                if (fighter.effects.trapped.turns <= 0) {
-                    fighter.effects.trapped.active = false;
-                    battleState.log.push(`${name} broke free from the webs!`);
-                }
-            }
-            
-            if (fighter.effects.charging.active) {
-                const chargeMove = fighter.effects.charging.move;
-                fighter.effects.charging.active = false;
-                fighter.effects.charging.move = null;
-                return chargeMove;
-            }
-            
-            return null;
-        }
-
-        async function useItem(itemKey, healAmount) {
-            if (!battleState.canUseItems) return;
-
-            const inventory = getUserInventory();
-            if (!inventory[itemKey] || inventory[itemKey] <= 0) {
-                return;
-            }
-
-            inventory[itemKey]--;
-            setUserInventory(inventory);
-
-            const actualHeal = Math.min(healAmount, battleState.player.spider.maxToughness - battleState.player.currentToughness);
-            battleState.player.currentToughness += actualHeal;
-
-            battleState.log.push(`Used ${itemKey}! Restored ${actualHeal} Toughness!`);
-
-            battleState.turn = 'enemy';
-            renderBattle();
-            setTimeout(() => enemyTurn(), 2000);
-        }
-
-        async function enemyTurn() {
-            const attacker = battleState.enemy;
-            const defender = battleState.player;
-            
-            const chargedMove = applyEndOfTurnEffects(attacker, attacker.spider.name);
-            applyEndOfTurnEffects(defender, defender.spider.name);
-            
-            if (defender.currentToughness <= 0) {
-                await endBattle(false);
-                return;
-            }
-            if (attacker.currentToughness <= 0) {
-                await endBattle(true);
-                return;
-            }
-            
-            const move = chargedMove || attacker.spider.moves[Math.floor(Math.random() * attacker.spider.moves.length)];
-            
-            applyMoveEffects(move, attacker, defender, 'enemy');
-            
-            if (defender.currentToughness <= 0) {
-                await endBattle(false);
-                return;
-            }
-
-            battleState.turn = 'player';
-            renderBattle();
-        }
-
-        function calculateDamage(move, attacker, defender) {
-            let damage = move.power;
-            
-            const statValue = attacker.spider[move.stat] || 0;
-            const statMod = attacker.effects[move.stat + 'Mod'] || 0;
-            const effectiveStat = statValue + statMod;
-            
-            damage += Math.floor(effectiveStat / 5);
-            
-            const defenderToughness = (defender.spider.toughness || 0) + (defender.effects.toughnessMod || 0);
-            damage = Math.max(5, damage - Math.floor(defenderToughness / 20));
-            
-            const isCrit = (move.effect && move.effect.type === 'guaranteed_crit') || Math.random() < 0.1;
-            if (isCrit && move.power > 0) {
-                damage = Math.floor(damage * 1.5);
-            }
-            
-            damage += Math.floor(Math.random() * 10) - 5;
-            
-            return Math.max(1, damage);
-        }
-
-        async function endBattle(playerWon) {
-            const playerSpider = spiders.find(s => s.id === battleState.player.spider.id);
-            const enemySpider = spiders.find(s => s.id === battleState.enemy.spider.id);
-
-            playerSpider.toughness = Math.max(0, battleState.player.currentToughness);
-            enemySpider.toughness = Math.max(0, battleState.enemy.currentToughness);
-
-            const playerUser = users.find(u => u.username === currentUser);
-            const enemyUser = users.find(u => u.username === enemySpider.owner);
-
-            const playerXp = calculateXpReward(enemySpider.level, playerWon);
-            const enemyXp = calculateXpReward(playerSpider.level, !playerWon);
-
-            if (playerWon) {
-                playerSpider.wins++;
-                enemySpider.losses++;
-                playerUser.coins += 50 + battleState.wager;
-                if (battleState.wager > 0) {
-                    enemyUser.coins = Math.max(0, enemyUser.coins - battleState.wager);
-                }
-                
-                battleState.log.push(`🎉 VICTORY! ${battleState.player.spider.name} wins!`);
-                battleState.log.push(`Earned 50 coins${battleState.wager > 0 ? ` + ${battleState.wager} wager` : ''}!`);
-            } else {
-                playerSpider.losses++;
-                enemySpider.wins++;
-                if (battleState.wager > 0) {
-                    playerUser.coins = Math.max(0, playerUser.coins - battleState.wager);
-                    enemyUser.coins += battleState.wager;
-                }
-                
-                battleState.log.push(`💔 DEFEAT! ${battleState.player.spider.name} fainted!`);
-                if (battleState.wager > 0) {
-                    battleState.log.push(`Lost ${battleState.wager} coins in wager.`);
-                }
-            }
-
-            const playerLevelUps = addXpToSpider(playerSpider, playerXp);
-            const enemyLevelUps = addXpToSpider(enemySpider, enemyXp);
-
-            battleState.log.push(`${playerSpider.name} gained ${playerXp} XP!`);
-            if (playerLevelUps.length > 0) {
-                playerLevelUps.forEach(lu => {
-                    battleState.log.push(`🎊 ${playerSpider.name} leveled up to Level ${lu.level}!`);
-                    battleState.log.push(`  +${lu.gains.strengthGain} STR, +${lu.gains.speedGain} SPD, +${lu.gains.sizeGain} SIZE, +${lu.gains.venomGain} VEN, +${lu.gains.toughnessGain} TOU!`);
-                });
-            }
-
-            battleState.log.push(`${enemySpider.name} gained ${enemyXp} XP!`);
-            if (enemyLevelUps.length > 0) {
-                enemyLevelUps.forEach(lu => {
-                    battleState.log.push(`${enemySpider.name} leveled up to Level ${lu.level}!`);
-                });
-            }
-
-            activeBattles = activeBattles.filter(b => 
-                b.playerSpiderId !== battleState.player.spider.id && 
-                b.enemySpiderId !== battleState.enemy.spider.id
-            );
-
-            await saveData();
-            renderBattle();
-
-            setTimeout(() => {
-                let message = playerWon ? '🎉 You won the battle!' : '💔 You lost the battle!';
-                if (playerLevelUps.length > 0) {
-                    message += `\n\n🎊 ${playerSpider.name} leveled up to Level ${playerSpider.level}!`;
-                    const lastLevelUp = playerLevelUps[playerLevelUps.length - 1];
-                    message += `\n+${lastLevelUp.gains.strengthGain} STR, +${lastLevelUp.gains.speedGain} SPD, +${lastLevelUp.gains.sizeGain} SIZE, +${lastLevelUp.gains.venomGain} VEN, +${lastLevelUp.gains.toughnessGain} TOU!`;
-                }
-                alert(message);
-                backToBattleSelect();
-            }, 3000);
-        }
-
-        async function forfeitBattle() {
-            if (!confirm('Forfeit this battle? You will lose!')) return;
-            await endBattle(false);
-        }
-
-        function backToBattleSelect() {
-            document.getElementById('battleSelectPhase').classList.remove('hidden');
-            document.getElementById('battleOpponentPhase').classList.add('hidden');
-            document.getElementById('battleArenaPhase').classList.add('hidden');
-            battleState = null;
-            selectedBattleSpider = null;
-            
-            updateBattleTabIndicator();
-            
-            renderBattleSelect();
-        }
-        
-        function updateBattleTabIndicator() {
-            const battleBtn = document.getElementById('battleTabBtn');
-            if (battleState) {
-                battleBtn.innerHTML = '⚔️ Battle 🔴';
-                battleBtn.style.position = 'relative';
-                battleBtn.style.animation = 'pulse 2s infinite';
-            } else {
-                battleBtn.innerHTML = '⚔️ Battle';
-                battleBtn.style.animation = 'none';
-            }
-        }
-
-        function updateTradeTabIndicator() {
-            const tradeBtn = document.getElementById('tradeTabBtn');
-            if (!currentUser) {
-                tradeBtn.innerHTML = '🔄 Trade';
-                tradeBtn.style.animation = 'none';
-                return;
-            }
-            
-            const incomingTrades = tradeOffers.filter(offer => offer.toUser === currentUser && offer.status === 'pending');
-            
-            if (incomingTrades.length > 0) {
-                tradeBtn.innerHTML = `🔄 Trade 🟢 ${incomingTrades.length}`;
-                tradeBtn.style.position = 'relative';
-                tradeBtn.style.animation = 'pulse 2s infinite';
-            } else {
-                tradeBtn.innerHTML = '🔄 Trade';
-                tradeBtn.style.animation = 'none';
-            }
-        }
-
-        function renderTradeTab() {
-            if (!currentUser) {
-                document.getElementById('incomingTrades').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
-                document.getElementById('outgoingTrades').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
-                document.getElementById('tradeMySpiders').innerHTML = '<p style="color: #666;">Please login to trade!</p>';
-                return;
-            }
-
-            renderIncomingTrades();
-            renderOutgoingTrades();
-            renderMyTradableSpiders();
-        }
-
-        function renderIncomingTrades() {
-            const incoming = tradeOffers.filter(offer => offer.toUser === currentUser && offer.status === 'pending');
-            const container = document.getElementById('incomingTrades');
-
-            if (incoming.length === 0) {
-                container.innerHTML = '<p style="color: #666;">No incoming trade offers</p>';
-                return;
-            }
-
-            container.innerHTML = incoming.map(offer => {
-                const offeredSpider = spiders.find(s => s.id === offer.spiderId);
-                if (!offeredSpider) return '';
-
-                const requestedSpider = offer.requestedSpiderId ? spiders.find(s => s.id === offer.requestedSpiderId) : null;
-
-                return `
-                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <h4 style="color: #4ecdc4; margin-bottom: 10px;">📥 Offering You:</h4>
-                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                                    <img src="${offeredSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-                                    <div>
-                                        <p style="color: #4ecdc4; font-weight: bold;">${offeredSpider.name}</p>
-                                        <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
-                                    </div>
-                                </div>
-                                ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
-                                
-                                ${requestedSpider ? `
-                                    <h4 style="color: #ffa500; margin-top: 15px; margin-bottom: 10px;">📤 Requesting From You:</h4>
-                                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                                        <img src="${requestedSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-                                        <div>
-                                            <p style="color: #ffa500; font-weight: bold;">${requestedSpider.name}</p>
-                                            <p style="color: #aaa; font-size: 0.9em;">Level ${requestedSpider.level} | ${requestedSpider.wins}W - ${requestedSpider.losses}L</p>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">From: <strong>${offer.fromUser}</strong></p>
-                                ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
-                            </div>
-                            <div style="display: flex; gap: 10px; flex-direction: column;">
-                                <button onclick="acceptTrade('${offer.id}')" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); margin: 0;">✓ Accept</button>
-                                <button onclick="rejectTrade('${offer.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin: 0;">✕ Reject</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderOutgoingTrades() {
-            const outgoing = tradeOffers.filter(offer => offer.fromUser === currentUser && offer.status === 'pending');
-            const container = document.getElementById('outgoingTrades');
-
-            if (outgoing.length === 0) {
-                container.innerHTML = '<p style="color: #666;">No outgoing trade offers</p>';
-                return;
-            }
-
-            container.innerHTML = outgoing.map(offer => {
-                const offeredSpider = spiders.find(s => s.id === offer.spiderId);
-                if (!offeredSpider) return '';
-
-                const requestedSpider = offer.requestedSpiderId ? spiders.find(s => s.id === offer.requestedSpiderId) : null;
-
-                return `
-                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <h4 style="color: #ffa500; margin-bottom: 10px;">📤 You're Offering:</h4>
-                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                                    <img src="${offeredSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-                                    <div>
-                                        <p style="color: #ffa500; font-weight: bold;">${offeredSpider.name}</p>
-                                        <p style="color: #aaa; font-size: 0.9em;">Level ${offeredSpider.level} | ${offeredSpider.wins}W - ${offeredSpider.losses}L</p>
-                                    </div>
-                                </div>
-                                ${offer.coins > 0 ? `<p style="color: #ffd700; font-size: 0.9em;">+ 💰 ${offer.coins} coins</p>` : ''}
-                                
-                                ${requestedSpider ? `
-                                    <h4 style="color: #4ecdc4; margin-top: 15px; margin-bottom: 10px;">📥 Requesting:</h4>
-                                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                                        <img src="${requestedSpider.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-                                        <div>
-                                            <p style="color: #4ecdc4; font-weight: bold;">${requestedSpider.name}</p>
-                                            <p style="color: #aaa; font-size: 0.9em;">Level ${requestedSpider.level} | ${requestedSpider.wins}W - ${requestedSpider.losses}L</p>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">To: <strong>${offer.toUser}</strong></p>
-                                ${offer.message ? `<p style="color: #bbb; font-size: 0.85em; font-style: italic; margin-top: 5px;">"${offer.message}"</p>` : ''}
-                                <p style="color: #888; font-size: 0.8em; margin-top: 5px;">⏳ Waiting for response...</p>
-                            </div>
-                            <button onclick="cancelTrade('${offer.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin: 0;">Cancel</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderMyTradableSpiders() {
-            const mySpiders = spiders.filter(s => s.owner === currentUser && s.verified);
-            const container = document.getElementById('tradeMySpiders');
-
-            if (mySpiders.length === 0) {
-                container.innerHTML = '<p style="color: #666;">You have no spiders to trade!</p>';
-                return;
-            }
-
-            container.innerHTML = mySpiders.map(spider => `
-                <div class="spider-card" style="cursor: pointer;" onclick="initiateTradeOffer(${spider.id})">
-                    <img src="${spider.image}" class="spider-image" alt="${spider.name}">
-                    <div class="spider-name">${spider.name}</div>
-                    <div class="stat"><span>Level:</span><span>${spider.level}</span></div>
-                    <div class="stat"><span>Toughness:</span><span>${spider.toughness}/${spider.maxToughness}</span></div>
-                    <div class="stat"><span>Record:</span><span>${spider.wins || 0}W - ${spider.losses || 0}L</span></div>
-                    <button>Offer in Trade</button>
-                </div>
-            `).join('');
-        }
-
-        function initiateTradeOffer(spiderId) {
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider || spider.owner !== currentUser) {
-                alert('Cannot trade this spider!');
-                return;
-            }
-
-            const allUsers = users.map(u => u.username).filter(u => u !== currentUser);
-            if (allUsers.length === 0) {
-                alert('No other users to trade with!');
-                return;
-            }
-
-            const recipient = prompt(`Trade ${spider.name} to which user?\n\nAvailable users:\n${allUsers.join(', ')}`);
-            if (!recipient) return;
-
-            if (!users.find(u => u.username === recipient)) {
-                alert('User not found!');
-                return;
-            }
-
-            if (recipient === currentUser) {
-                alert('Cannot trade with yourself!');
-                return;
-            }
-
-            const tradeType = confirm('Click OK to request a specific spider in return\nClick Cancel to just send your spider (with optional coins)');
-            
-            let requestedSpiderId = null;
-            if (tradeType) {
-                const recipientSpiders = spiders.filter(s => s.owner === recipient && s.verified);
-                if (recipientSpiders.length === 0) {
-                    alert('This user has no spiders to trade!');
-                    return;
-                }
-                
-                const spiderList = recipientSpiders.map((s, i) => `${i + 1}. ${s.name} (Lvl ${s.level})`).join('\n');
-                const spiderChoice = prompt(`Which spider do you want in return?\n\n${spiderList}\n\nEnter the number:`);
-                
-                if (!spiderChoice) return;
-                
-                const choiceIndex = parseInt(spiderChoice) - 1;
-                if (choiceIndex < 0 || choiceIndex >= recipientSpiders.length) {
-                    alert('Invalid choice!');
-                    return;
-                }
-                
-                requestedSpiderId = recipientSpiders[choiceIndex].id;
-            }
-
-            const coinsInput = prompt(`Add coins to the trade? (0 for no coins)\n\nYour balance: ${users.find(u => u.username === currentUser).coins} coins`);
-            const coins = parseInt(coinsInput) || 0;
-
-            if (coins < 0) {
-                alert('Invalid coin amount!');
-                return;
-            }
-
-            if (coins > users.find(u => u.username === currentUser).coins) {
-                alert('Not enough coins!');
-                return;
-            }
-
-            const message = prompt('Add a message? (optional)') || '';
-
-            createTradeOffer(spiderId, recipient, coins, message, requestedSpiderId);
-        }
-
-        async function createTradeOffer(spiderId, toUser, coins, message, requestedSpiderId = null) {
-            const offer = {
-                id: `trade_${Date.now()}`,
-                fromUser: currentUser,
-                toUser: toUser,
-                spiderId: spiderId,
-                requestedSpiderId: requestedSpiderId,
-                coins: coins,
-                message: message,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-
-            tradeOffers.push(offer);
-
-            renderTradeTab();
-            
-            updateTradeTabIndicator();
-            
-            if (await saveData()) {
-                showStatus('shopStatus', 'Trade offer sent!', 'success');
-            }
-        }
-
-        async function acceptTrade(offerId) {
-            const offer = tradeOffers.find(o => o.id === offerId);
-            if (!offer || offer.toUser !== currentUser) {
-                alert('Invalid trade offer!');
-                return;
-            }
-
-            const offeredSpider = spiders.find(s => s.id === offer.spiderId);
-            if (!offeredSpider) {
-                alert('Spider not found!');
-                return;
-            }
-
-            if (offer.requestedSpiderId) {
-                const requestedSpider = spiders.find(s => s.id === offer.requestedSpiderId);
-                if (!requestedSpider) {
-                    alert('Requested spider not found!');
-                    return;
-                }
-                
-                if (requestedSpider.owner !== currentUser) {
-                    alert('You no longer own the requested spider!');
-                    return;
-                }
-
-                const confirmMsg = `Accept trade?\n\nYou give: ${requestedSpider.name}\nYou receive: ${offeredSpider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}`;
-                if (!confirm(confirmMsg)) {
-                    return;
-                }
-
-                offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
-                offeredSpider.ownerHistory.push(currentUser);
-                offeredSpider.owner = currentUser;
-
-                requestedSpider.ownerHistory = requestedSpider.ownerHistory || [requestedSpider.owner];
-                requestedSpider.ownerHistory.push(offer.fromUser);
-                requestedSpider.owner = offer.fromUser;
-            } else {
-                if (!confirm(`Accept trade for ${offeredSpider.name}${offer.coins > 0 ? ` + ${offer.coins} coins` : ''}?`)) {
-                    return;
-                }
-
-                offeredSpider.ownerHistory = offeredSpider.ownerHistory || [offeredSpider.owner];
-                offeredSpider.ownerHistory.push(currentUser);
-                offeredSpider.owner = currentUser;
-            }
-
-            if (offer.coins > 0) {
-                const fromUser = users.find(u => u.username === offer.fromUser);
-                const toUser = users.find(u => u.username === offer.toUser);
-                fromUser.coins -= offer.coins;
-                toUser.coins += offer.coins;
-            }
-
-            offer.status = 'accepted';
-
-            renderTradeTab();
-            updateCoins();
-            
-            updateTradeTabIndicator();
-            
-            if (await saveData()) {
-                alert('Trade accepted!');
-            }
-        }
-
-        async function rejectTrade(offerId) {
-            const offer = tradeOffers.find(o => o.id === offerId);
-            if (!offer || offer.toUser !== currentUser) {
-                alert('Invalid trade offer!');
-                return;
-            }
-
-            offer.status = 'rejected';
-
-            renderTradeTab();
-            
-            updateTradeTabIndicator();
-            
-            debouncedSave();
-        }
-
-        async function cancelTrade(offerId) {
-            const offer = tradeOffers.find(o => o.id === offerId);
-            if (!offer || offer.fromUser !== currentUser) {
-                alert('Invalid trade offer!');
-                return;
-            }
-
-            if (!confirm('Cancel this trade offer?')) return;
-
-            offer.status = 'cancelled';
-
-            renderTradeTab();
-            
-            updateTradeTabIndicator();
-            
-            debouncedSave();
-        }
-
-        let isProcessingPurchase = false;
-
-        async function useItemOnSpider(spiderId, itemKey, healAmount) {
-            if (!currentUser) {
-                alert('Please login first!');
-                return;
-            }
-
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider || spider.owner !== currentUser) {
-                alert('You can only use items on your own spiders!');
-                return;
-            }
-
-            const inventory = getUserInventory();
-            if (!inventory[itemKey] || inventory[itemKey] <= 0) {
-                alert(`You don't have any ${itemKey}! Buy some from the shop.`);
-                return;
-            }
-
-            inventory[itemKey]--;
-            setUserInventory(inventory);
-
-            const actualHeal = Math.min(healAmount, spider.maxToughness - spider.toughness);
-            spider.toughness = Math.min(spider.toughness + healAmount, spider.maxToughness);
-
-            if (await saveData()) {
-                alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} Toughness and is now at ${spider.toughness}/${spider.maxToughness} Toughness!`);
-                renderSpiders();
-                renderInventory();
-            }
-        }
-
-        function updateShopPrices() {
-            document.getElementById('pricePotion').textContent = shopPrices.potion;
-            document.getElementById('priceSuperPotion').textContent = shopPrices.superPotion;
-            document.getElementById('priceFullRestore').textContent = shopPrices.fullRestore;
-        }
-
-        function renderInventory() {
-            const inventory = getUserInventory();
-            const display = document.getElementById('inventoryDisplay');
-            
-            const items = [
-                { key: 'potion', name: 'Potion' },
-                { key: 'superPotion', name: 'Super Potion' },
-                { key: 'fullRestore', name: 'Full Restore' }
-            ];
-
-            const html = items.map(item => {
-                const count = inventory[item.key] || 0;
-                return `
-                    <div class="inventory-item">
-                        <span>${item.name}</span>
-                        <span>x${count}</span>
-                    </div>
-                `;
-            }).join('');
-
-            display.innerHTML = html || '<p style="color: #666;">No items yet</p>';
-        }
-
-        async function buyShopItem(itemKey) {
-            if (isProcessingPurchase) {
-                showStatus('shopStatus', 'Please wait, processing...', 'error');
-                return;
-            }
-
-            if (!currentUser) {
-                showStatus('shopStatus', 'Please login first!', 'error');
-                return;
-            }
-
-            const user = users.find(u => u.username === currentUser);
-            if (!user) {
-                showStatus('shopStatus', 'User not found! Please login again.', 'error');
-                return;
-            }
-
-            const price = shopPrices[itemKey];
-            if (!price) {
-                showStatus('shopStatus', 'Invalid item!', 'error');
-                return;
-            }
-
-            const currentCoins = user.coins || 0;
-            if (currentCoins < price) {
-                showStatus('shopStatus', `Not enough coins! You have ${currentCoins}, need ${price} coins.`, 'error');
-                return;
-            }
-
-            isProcessingPurchase = true;
-
-            try {
-                user.coins = currentCoins - price;
-                
-                if (!user.inventory) {
-                    user.inventory = {};
-                }
-                
-                user.inventory[itemKey] = (user.inventory[itemKey] || 0) + 1;
-
-                const saveSuccess = await saveData();
-                
-                if (saveSuccess) {
-                    showStatus('shopStatus', `Successfully purchased ${itemKey}!`, 'success');
-                    updateCoins();
-                    renderInventory();
-                } else {
-                    user.coins = currentCoins;
-                    user.inventory[itemKey]--;
-                    if (user.inventory[itemKey] <= 0) {
-                        delete user.inventory[itemKey];
-                    }
-                    showStatus('shopStatus', 'Purchase failed - please try again', 'error');
-                }
-            } catch (error) {
-                console.error('Purchase error:', error);
-                user.coins = currentCoins;
-                if (user.inventory[itemKey]) {
-                    user.inventory[itemKey]--;
-                    if (user.inventory[itemKey] <= 0) {
-                        delete user.inventory[itemKey];
-                    }
-                }
-                showStatus('shopStatus', 'Purchase failed - please try again', 'error');
-            } finally {
-                setTimeout(() => {
-                    isProcessingPurchase = false;
-                }, 500);
-            }
-        }
-
-        function checkAdminAccess() {
-            if (currentUser === 'admin') {
-                document.getElementById('adminAccessDenied').classList.add('hidden');
-                document.getElementById('adminContent').classList.remove('hidden');
-                renderAdminPanel();
-            } else {
-                document.getElementById('adminAccessDenied').classList.remove('hidden');
-                document.getElementById('adminContent').classList.add('hidden');
-            }
-        }
-
-        function renderAdminPanel() {
-            if (currentUser !== 'admin') return;
-
-            if (config.gistId) {
-                const gistUrl = `https://gist.github.com/${config.gistId}`;
-                const adminGistLink = document.getElementById('adminGistLink');
-                if (adminGistLink) {
-                    adminGistLink.href = gistUrl;
-                }
-            }
-
-            const pendingSpiders = spiders.filter(s => s.pending && !s.verified);
-            const queueDiv = document.getElementById('verificationQueue');
-
-            if (pendingSpiders.length === 0) {
-                queueDiv.innerHTML = '<p style="color: #666;">No pending spiders</p>';
-            } else {
-                queueDiv.innerHTML = pendingSpiders.map(spider => `
-                    <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.5); padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
-                        <img src="${spider.image}" style="max-width: 300px; max-height: 300px; border-radius: 10px; margin-bottom: 15px;" alt="${spider.name}">
-                        <h3>${spider.name}</h3>
-                        ${spider.latinName ? `<p style="font-style: italic; color: #aaa;">${spider.latinName}</p>` : ''}
-                        <p style="color: #aaa;">By: ${spider.owner}</p>
-                        <div class="stat"><span>Strength:</span><span>${spider.strength}</span></div>
-                        <div class="stat"><span>Speed:</span><span>${spider.speed}</span></div>
-                        <div class="stat"><span>Size:</span><span>${spider.size}</span></div>
-                        <div class="stat"><span>Venom:</span><span>${spider.venom}</span></div>
-                        <div class="stat"><span>Toughness:</span><span>${spider.toughness}</span></div>
-                        ${spider.customFields && spider.customFields.length > 0 ? spider.customFields.map(field => `
-                            <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
-                        `).join('') : ''}
-                        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
-                            <button onclick="verifySpider(${spider.id}, true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
-                            <button onclick="verifySpider(${spider.id}, false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            document.getElementById('adminMoves').value = JSON.stringify(MOVE_LIST, null, 2);
-            document.getElementById('adminPricePotion').value = shopPrices.potion;
-            document.getElementById('adminPriceSuperPotion').value = shopPrices.superPotion;
-            document.getElementById('adminPriceFullRestore').value = shopPrices.fullRestore;
-            document.getElementById('adminTaglines').value = taglines.join('\n');
-
-            document.getElementById('adminBugReports').innerHTML = renderBugReports();
-
-            const usersList = document.getElementById('usersList');
-            usersList.innerHTML = users.map(user => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin: 5px 0; background: rgba(255, 255, 255, 0.05); border-radius: 5px;">
-                    <div>
-                        <strong>${user.username}</strong>
-                        <div style="color: #aaa; font-size: 0.9em;">
-                            Coins: ${user.coins || 0} | 
-                            Spiders: ${spiders.filter(s => s.owner === user.username && s.verified).length}
-                        </div>
-                    </div>
-                    ${user.username !== 'admin' ? `<button onclick="deleteUser('${user.username}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function verifySpider(spiderId, approved) {
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider) return;
-
-            if (approved) {
-                spider.verified = true;
-                spider.pending = false;
-                spider.moves = generateMoves(spider);
-                
-                const owner = users.find(u => u.username === spider.owner);
-                if (owner) owner.coins += 50;
-                
-                showStatus('adminStatus', `Spider approved! ${spider.owner} earned 50 coins.`, 'success');
-            } else {
-                spiders = spiders.filter(s => s.id !== spiderId);
-                showStatus('adminStatus', 'Spider denied and removed.', 'error');
-            }
-
-            await saveData();
-            renderAdminPanel();
-        }
-
-        async function saveMoveList() {
-            try {
-                MOVE_LIST = JSON.parse(document.getElementById('adminMoves').value);
-                if (await saveData()) {
-                    showStatus('adminStatus', 'Move list updated!', 'success');
-                }
-            } catch (e) {
-                showStatus('adminStatus', 'Invalid JSON format!', 'error');
-            }
-        }
-
-        async function saveShopPrices() {
-            shopPrices.potion = parseInt(document.getElementById('adminPricePotion').value);
-            shopPrices.superPotion = parseInt(document.getElementById('adminPriceSuperPotion').value);
-            shopPrices.fullRestore = parseInt(document.getElementById('adminPriceFullRestore').value);
-
-            if (await saveData()) {
-                showStatus('adminStatus', 'Shop prices updated!', 'success');
-                updateShopPrices();
-            }
-        }
-        
-        async function saveTaglines() {
-            const taglinesText = document.getElementById('adminTaglines').value;
-            const lines = taglinesText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            
-            if (lines.length === 0) {
-                showStatus('adminStatus', 'Please enter at least one tagline!', 'error');
-                return;
-            }
-            
-            taglines = lines;
-            
-            if (await saveData()) {
-                showStatus('adminStatus', `Taglines updated! (${taglines.length} total)`, 'success');
-                updateTagline();
-            }
-        }
-
-        async function deleteUser(username) {
-            if (!confirm(`Delete user ${username}?`)) return;
-            users = users.filter(u => u.username !== username);
-            spiders = spiders.filter(s => s.owner !== username);
-            
-            renderAdminPanel();
-            
-            debouncedSave();
-        }
-
-        function openBugReport() {
-            document.getElementById('bugReportModal').classList.add('active');
-            if (currentUser) {
-                document.getElementById('bugReporterName').value = currentUser;
-            }
-        }
-
-        function closeBugReport() {
-            document.getElementById('bugReportModal').classList.remove('active');
-            document.getElementById('bugDescription').value = '';
-            document.getElementById('bugSteps').value = '';
-            document.getElementById('bugReporterName').value = '';
-            document.getElementById('bugReportStatus').innerHTML = '';
-        }
-
-        function closeBugReportOnOverlay(event) {
-            if (event.target.id === 'bugReportModal') {
-                closeBugReport();
-            }
-        }
-
-        async function submitBugReport() {
-            const description = document.getElementById('bugDescription').value.trim();
-            const steps = document.getElementById('bugSteps').value.trim();
-            const reporterName = document.getElementById('bugReporterName').value.trim() || 'Anonymous';
-
-            if (!description) {
-                showStatus('bugReportStatus', 'Please describe the bug!', 'error');
-                return;
-            }
-
-            const report = {
-                id: `bug_${Date.now()}`,
-                description: description,
-                steps: steps,
-                reportedBy: reporterName,
-                timestamp: new Date().toISOString(),
-                status: 'open'
-            };
-
-            bugReports.push(report);
-
-            if (await saveData()) {
-                showStatus('bugReportStatus', 'Bug report submitted! Thank you!', 'success');
-                setTimeout(() => {
-                    closeBugReport();
-                }, 2000);
-            } else {
-                showStatus('bugReportStatus', 'Failed to submit. Please try again.', 'error');
-            }
-        }
-
-        function renderBugReports() {
-            if (currentUser !== 'admin') return '';
-
-            const openReports = bugReports.filter(r => r.status === 'open');
-            const closedReports = bugReports.filter(r => r.status === 'closed');
-
-            let html = '<h3 style="color: #4ecdc4; margin-bottom: 15px;">🐛 Bug Reports</h3>';
-            
-            html += `
-                <div style="background: rgba(78, 205, 196, 0.1); border: 2px solid rgba(78, 205, 196, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <p style="color: #4ecdc4; font-size: 1.1em;"><strong>Total Reports:</strong> ${bugReports.length}</p>
-                            <p style="color: #ffa500; font-size: 0.95em;">Open: ${openReports.length} | Closed: ${closedReports.length}</p>
-                        </div>
-                        ${bugReports.length > 0 ? `
-                            <button onclick="clearAllBugReports()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 10px 20px;">
-                                🗑️ Clear All Reports
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-
-            if (openReports.length === 0 && closedReports.length === 0) {
-                html += '<p style="color: #666; margin-bottom: 20px;">No bug reports yet</p>';
-                return html;
-            }
-
-            if (openReports.length > 0) {
-                html += '<div style="margin-bottom: 30px;">';
-                html += '<h4 style="color: #ffa500; margin-bottom: 10px;">📥 Open Reports:</h4>';
-                openReports.forEach((report, index) => {
-                    const date = new Date(report.timestamp).toLocaleString();
-                    html += `
-                        <div style="background: rgba(255, 165, 0, 0.1); border: 2px solid rgba(255, 165, 0, 0.5); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                <p style="color: #aaa; font-size: 0.85em;">
-                                    <strong style="color: #ffa500;">#${bugReports.length - index}</strong> | 
-                                    Reported by: <strong>${report.reportedBy}</strong>
-                                </p>
-                                <p style="color: #888; font-size: 0.8em;">${date}</p>
-                            </div>
-                            <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0;">
-                                <p style="color: #fff;"><strong>Description:</strong></p>
-                                <p style="color: #ddd; margin-top: 5px;">${report.description}</p>
-                            </div>
-                            ${report.steps ? `
-                                <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0;">
-                                    <p style="color: #fff;"><strong>Steps to Reproduce:</strong></p>
-                                    <p style="color: #ddd; margin-top: 5px; white-space: pre-wrap;">${report.steps}</p>
-                                </div>
-                            ` : ''}
-                            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                                <button onclick="closeBugReport_admin('${report.id}')" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); flex: 1;">
-                                    ✓ Mark as Resolved
-                                </button>
-                                <button onclick="deleteBugReport('${report.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 10px 20px;">
-                                    🗑️ Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-            }
-
-            if (closedReports.length > 0) {
-                html += `
-                    <details style="margin-top: 20px;">
-                        <summary style="color: #4ecdc4; cursor: pointer; margin-bottom: 10px; font-size: 1.1em; padding: 10px; background: rgba(78, 205, 196, 0.1); border-radius: 5px;">
-                            ✓ Resolved Reports (${closedReports.length})
-                        </summary>
-                        <div style="margin-top: 10px;">
-                `;
-                closedReports.forEach((report, index) => {
-                    const date = new Date(report.timestamp).toLocaleString();
-                    html += `
-                        <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 5px; margin-bottom: 8px; opacity: 0.7; border-left: 3px solid #4ecdc4;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <p style="color: #aaa; font-size: 0.85em;">
-                                    <strong style="color: #4ecdc4;">#${bugReports.length - bugReports.indexOf(report)}</strong> | 
-                                    ${report.reportedBy} - ${date}
-                                </p>
-                                <button onclick="deleteBugReport('${report.id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 6px 12px; font-size: 0.85em;">
-                                    🗑️
-                                </button>
-                            </div>
-                            <p style="color: #ccc; font-size: 0.9em;">${report.description}</p>
-                            ${report.steps ? `<p style="color: #888; font-size: 0.85em; margin-top: 5px; font-style: italic;">Steps: ${report.steps.substring(0, 100)}${report.steps.length > 100 ? '...' : ''}</p>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div></details>';
-            }
-
-            return html;
-        }
-
-        async function closeBugReport_admin(reportId) {
-            const report = bugReports.find(r => r.id === reportId);
-            if (report) {
-                report.status = 'closed';
-                await saveData();
-                renderAdminPanel();
-                showStatus('adminStatus', 'Bug report marked as resolved!', 'success');
-            }
-        }
-
-        async function deleteBugReport(reportId) {
-            if (!confirm('Delete this bug report permanently?')) return;
-            
-            bugReports = bugReports.filter(r => r.id !== reportId);
-            await saveData();
-            renderAdminPanel();
-            showStatus('adminStatus', 'Bug report deleted!', 'success');
-        }
-
-        async function clearAllBugReports() {
-            const confirmed = confirm(
-                `⚠️ WARNING ⚠️\n\nThis will permanently delete ALL ${bugReports.length} bug reports (both open and closed).\n\nThis action cannot be undone!\n\nAre you sure?`
-            );
-            
-            if (!confirmed) return;
-            
-            const doubleCheck = confirm(
-                `Really clear all ${bugReports.length} reports?\n\nLast chance to cancel!`
-            );
-            
-            if (!doubleCheck) return;
-            
-            bugReports = [];
-            await saveData();
-            renderAdminPanel();
-            showStatus('adminStatus', 'All bug reports cleared!', 'success');
-        }
-
-        loadConfig();
-        updateTagline();
-        
-        window.addEventListener('beforeunload', () => {
-            if (pendingSave) {
-                saveDataNow();
-            }
-        });
-    </script>
-</body>
-</html>
