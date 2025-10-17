@@ -1577,57 +1577,101 @@
             if (config.gistId) loadData();
         }
 
-        async function register() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
+       async function register() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
 
-            if (!username || !password) {
-                showStatus('loginStatus', 'Enter username and password!', 'error');
-                return;
-            }
+  if (!username || !password) {
+    showStatus('loginStatus', 'Enter username and password!', 'error');
+    return;
+  }
+  if (username.length < 3) {
+    showStatus('loginStatus', 'Username must be 3+ characters', 'error');
+    return;
+  }
+  if (password.length < 4) {
+    showStatus('loginStatus', 'Password must be 4+ characters', 'error');
+    return;
+  }
 
-            if (username.length < 3) {
-                showStatus('loginStatus', 'Username must be 3+ characters', 'error');
-                return;
-            }
-            
-            if (password.length < 4) {
-                showStatus('loginStatus', 'Password must be 4+ characters', 'error');
-                return;
-            }
+  const confirmed = confirm(
+    '⚠️ SECURITY WARNING ⚠️\n\n' +
+    'Your password will be hashed and stored in a GitHub Gist.\n\n' +
+    'DO NOT use a password you use for any other account!\n\n' +
+    'Only use a simple, unique password for this game.\n\n' +
+    'Click OK to confirm you understand and want to register.'
+  );
+  if (!confirmed) return;
 
-            if (users.find(u => u.username === username)) {
-                showStatus('loginStatus', 'Username already taken!', 'error');
-                return;
-            }
-            
-            const confirmed = confirm(
-                '⚠️ SECURITY WARNING ⚠️\n\n' +
-                'Your password will be hashed and stored in a GitHub Gist.\n\n' +
-                'DO NOT use a password you use for any other account!\n\n' +
-                'Only use a simple, unique password for this game.\n\n' +
-                'Click OK to confirm you understand and want to register.'
-            );
-            
-            if (!confirmed) {
-                return;
-            }
-
-            users.push({
-                username,
-                password,
-                coins: 100,
-                inventory: {},
-                createdAt: new Date().toISOString()
-            });
-
-            if (await saveData()) {
-                currentUser = username;
-                window.localStorage.setItem('spiderUser', username);
-                showUserInfo();
-                showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
-            }
+  // 1) Pull the latest data from the Gist to avoid overwriting others' changes
+  let latest = null;
+  if (config.githubToken && config.gistId) {
+    try {
+      const resp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
+        headers: {
+          'Authorization': `token ${config.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json'
         }
+      });
+      if (resp.ok) {
+        const gist = await resp.json();
+        latest = JSON.parse(gist.files['spider-league.json'].content);
+      }
+    } catch (e) {
+      console.warn('Could not fetch latest Gist before registering user. Proceeding with local state.', e);
+    }
+  }
+
+  // 2) Merge: prefer latest-from-Gist where available to minimize clobbering
+  const merged = {
+    spiders: latest?.spiders ?? spiders,
+    users: latest?.users ?? users,
+    shopPrices: latest?.shopPrices ?? shopPrices,
+    moveList: latest?.moveList ?? MOVE_LIST,
+    taglines: latest?.taglines ?? taglines,
+    tradeOffers: latest?.tradeOffers ?? tradeOffers,
+    bugReports: latest?.bugReports ?? bugReports,
+    activeBattles: latest?.activeBattles ?? activeBattles,
+    dailyHats: latest?.dailyHats ?? dailyHats,
+    hatInventory: latest?.hatInventory ?? hatInventory
+  };
+
+  // 3) Check for duplicates against the merged list
+  if (merged.users.find(u => u.username === username)) {
+    showStatus('loginStatus', 'Username already taken!', 'error');
+    return;
+  }
+
+  // 4) Add the new user to the merged list
+  merged.users.push({
+    username,
+    password,
+    coins: 100,
+    inventory: {},
+    createdAt: new Date().toISOString()
+  });
+
+  // 5) Replace local in-memory state with merged values, then save once
+  spiders = merged.spiders;
+  users = merged.users;
+  shopPrices = merged.shopPrices;
+  MOVE_LIST = merged.moveList;
+  taglines = merged.taglines;
+  tradeOffers = merged.tradeOffers;
+  bugReports = merged.bugReports;
+  activeBattles = merged.activeBattles;
+  dailyHats = merged.dailyHats;
+  hatInventory = merged.hatInventory;
+
+  if (await saveData()) {
+    currentUser = username;
+    window.localStorage.setItem('spiderUser', username);
+    showUserInfo();
+    showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
+  } else {
+    showStatus('loginStatus', 'Could not save account. Try again.', 'error');
+  }
+}
 
         async function login() {
             const username = document.getElementById('username').value.trim();
