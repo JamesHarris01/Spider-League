@@ -1,4 +1,4 @@
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1617,57 +1617,6 @@
   window.localStorage.setItem('spiderUser', username);
   showUserInfo();
   showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
-}
-
-  // 2) Merge: prefer latest-from-Gist where available to minimize clobbering
-  const merged = {
-    spiders: latest?.spiders ?? spiders,
-    users: latest?.users ?? users,
-    shopPrices: latest?.shopPrices ?? shopPrices,
-    moveList: latest?.moveList ?? MOVE_LIST,
-    taglines: latest?.taglines ?? taglines,
-    tradeOffers: latest?.tradeOffers ?? tradeOffers,
-    bugReports: latest?.bugReports ?? bugReports,
-    activeBattles: latest?.activeBattles ?? activeBattles,
-    dailyHats: latest?.dailyHats ?? dailyHats,
-    hatInventory: latest?.hatInventory ?? hatInventory
-  };
-
-  // 3) Check for duplicates against the merged list
-  if (merged.users.find(u => u.username === username)) {
-    showStatus('loginStatus', 'Username already taken!', 'error');
-    return;
-  }
-
-  // 4) Add the new user to the merged list
-  merged.users.push({
-    username,
-    password,
-    coins: 100,
-    inventory: {},
-    createdAt: new Date().toISOString()
-  });
-
-  // 5) Replace local in-memory state with merged values, then save once
-  spiders = merged.spiders;
-  users = merged.users;
-  shopPrices = merged.shopPrices;
-  MOVE_LIST = merged.moveList;
-  taglines = merged.taglines;
-  tradeOffers = merged.tradeOffers;
-  bugReports = merged.bugReports;
-  activeBattles = merged.activeBattles;
-  dailyHats = merged.dailyHats;
-  hatInventory = merged.hatInventory;
-
-  if (await saveData()) {
-    currentUser = username;
-    window.localStorage.setItem('spiderUser', username);
-    showUserInfo();
-    showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
-  } else {
-    showStatus('loginStatus', 'Could not save account. Try again.', 'error');
-  }
 }
 
         async function login() {
