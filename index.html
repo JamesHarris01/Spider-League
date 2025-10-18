@@ -1722,25 +1722,48 @@ function uniqueUsers(latestUsers = [], localUsers = []) {
   return unionByKey(latestUsers, localUsers, 'username');
 }
 
-// --- main save functions ---
+// ---------- MERGE HELPERS (paste once) ----------
+function unionByKey(a = [], b = [], key = 'id') {
+  const map = new Map();
+  for (const x of a || []) if (x && x[key] != null) map.set(x[key], x);
+  for (const x of b || []) if (x && x[key] != null) map.set(x[key], x);
+  return Array.from(map.values());
+}
+
+function unionByCompositeKey(a = [], b = [], keyFn) {
+  const map = new Map();
+  for (const x of a || []) map.set(keyFn(x), x);
+  for (const x of b || []) map.set(keyFn(x), x);
+  return Array.from(map.values());
+}
+
+function ensureId(prefix = 'id_') {
+  return `${prefix}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+		
+// ---------- SAVE (replace your saveData / saveDataNow with this) ----------
 let __saving = false;
 
 async function saveData() {
-  // Prevent overlapping saves that can step on each other
+  // prevent overlapping saves
   while (__saving) await new Promise(r => setTimeout(r, 50));
   __saving = true;
+
   try {
-    if (!config.githubToken) {
-      console.warn('No GitHub token configured; skipping remote save.');
+    // if no token, just keep local (useful for local dev)
+    if (!config?.githubToken) {
+      console.warn('No GitHub token; saved locally only.');
+      // still cache config if gist got created later
       return true;
     }
 
-    // If no Gist yet, create one with current local state (first-time setup)
+    // First-time: create the gist
     if (!config.gistId) {
       const initial = {
         spiders, users, shopPrices, moveList: MOVE_LIST, taglines,
         tradeOffers, bugReports, activeBattles, dailyHats, hatInventory
       };
+
       const createResp = await fetch('https://api.github.com/gists', {
         method: 'POST',
         headers: {
@@ -1750,22 +1773,22 @@ async function saveData() {
         body: JSON.stringify({
           description: 'Spider League data',
           public: false,
-          files: {
-            'spider-league.json': { content: JSON.stringify(initial, null, 2) }
-          }
+          files: { 'spider-league.json': { content: JSON.stringify(initial, null, 2) } }
         })
       });
+
       if (!createResp.ok) {
-        console.error('Failed to create Gist', await createResp.text());
+        console.error('Failed to create Gist:', await createResp.text());
         return false;
       }
+
       const created = await createResp.json();
       config.gistId = created.id;
-      window.localStorage.setItem('spiderConfig', JSON.stringify(config));
+      localStorage.setItem('spiderConfig', JSON.stringify(config));
       return true;
     }
 
-    // Fetch latest to avoid clobber
+    // Pull latest to avoid clobbering other clients
     const resp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
       headers: {
         'Authorization': `token ${config.githubToken}`,
@@ -1774,48 +1797,70 @@ async function saveData() {
     });
 
     if (!resp.ok) {
-      console.error('Failed to fetch latest Gist before save', await resp.text());
+      console.error('Failed to fetch latest Gist before save:', await resp.text());
       return false;
     }
 
     const gist = await resp.json();
-    const latestContent = gist.files?.['spider-league.json']?.content;
+    const latestRaw = gist.files?.['spider-league.json']?.content ?? '{}';
     let latest = {};
-    try { latest = latestContent ? JSON.parse(latestContent) : {}; } catch (e) { latest = {}; }
+    try { latest = JSON.parse(latestRaw); } catch { latest = {}; }
 
-    // --- merge strategy ---
-    // Users MUST be merged (that’s your current pain point)
-    const mergedUsers = uniqueUsers(latest.users || [], users || []);
+    // Ensure local arrays exist
+    spiders       = Array.isArray(spiders)       ? spiders       : [];
+    users         = Array.isArray(users)         ? users         : [];
+    tradeOffers   = Array.isArray(tradeOffers)   ? tradeOffers   : [];
+    activeBattles = Array.isArray(activeBattles) ? activeBattles : [];
+    dailyHats     = Array.isArray(dailyHats)     ? dailyHats     : [];
+    hatInventory  = Array.isArray(hatInventory)  ? hatInventory  : [];
+    bugReports    = Array.isArray(bugReports)    ? bugReports    : [];
 
-    // For everything else, you can choose:
-    // - prefer latest if you didn’t change it locally
-    // - or prefer local. Below keeps the latest as base and overlays local where it exists.
+    // ---- UNION MERGES (conflict-tolerant) ----
+    const mergedSpiders = unionByKey(latest.spiders || [], spiders || [], 'id');
+    const mergedUsers   = unionByKey(latest.users   || [], users   || [], 'username');
+
+    const mergedTrades  = unionByKey(latest.tradeOffers || [], tradeOffers || [], 'id');
+
+    const mergedBattles = unionByCompositeKey(
+      latest.activeBattles || [],
+      activeBattles || [],
+      x => `${x.playerSpiderId}|${x.enemySpiderId}`
+    );
+
+    const mergedHatInv  = unionByKey(latest.hatInventory || [], hatInventory || [], 'id');
+    const mergedDaily   = unionByKey(latest.dailyHats    || [], dailyHats    || [], 'id');
+    const mergedBugs    = unionByKey(latest.bugReports   || [], bugReports   || [], 'id');
+
+    const mergedMoveList = Array.isArray(MOVE_LIST) ? MOVE_LIST : (latest.moveList || []);
+    const mergedShop     = { ...(latest.shopPrices || {}), ...(shopPrices || {}) };
+    const mergedTags     = Array.isArray(taglines) ? taglines : (latest.taglines || []);
+
     const merged = {
-      spiders: Array.isArray(latest.spiders) ? latest.spiders : [],
-      users: mergedUsers,
-      shopPrices: { ...(latest.shopPrices || {}), ...(shopPrices || {}) },
-      moveList: Array.isArray(MOVE_LIST) ? MOVE_LIST : (latest.moveList || []),
-      taglines: Array.isArray(taglines) ? taglines : (latest.taglines || []),
-      tradeOffers: Array.isArray(latest.tradeOffers) ? latest.tradeOffers : [],
-      bugReports: Array.isArray(latest.bugReports) ? latest.bugReports : [],
-      activeBattles: Array.isArray(latest.activeBattles) ? latest.activeBattles : [],
-      dailyHats: Array.isArray(latest.dailyHats) ? latest.dailyHats : [],
-      hatInventory: Array.isArray(latest.hatInventory) ? latest.hatInventory : []
+      spiders:       mergedSpiders,
+      users:         mergedUsers,
+      tradeOffers:   mergedTrades,
+      activeBattles: mergedBattles,
+      dailyHats:     mergedDaily,
+      hatInventory:  mergedHatInv,
+      bugReports:    mergedBugs,
+      moveList:      mergedMoveList,
+      shopPrices:    mergedShop,
+      taglines:      mergedTags
     };
 
-    // Update local memory to match what we’re about to write (stay consistent)
-    spiders = merged.spiders;
-    users = merged.users;
-    shopPrices = merged.shopPrices;
-    MOVE_LIST = merged.moveList;
-    taglines = merged.taglines;
-    tradeOffers = merged.tradeOffers;
-    bugReports = merged.bugReports;
+    // Keep local memory consistent with what we write
+    spiders       = merged.spiders;
+    users         = merged.users;
+    tradeOffers   = merged.tradeOffers;
     activeBattles = merged.activeBattles;
-    dailyHats = merged.dailyHats;
-    hatInventory = merged.hatInventory;
+    dailyHats     = merged.dailyHats;
+    hatInventory  = merged.hatInventory;
+    bugReports    = merged.bugReports;
+    MOVE_LIST     = merged.moveList;
+    shopPrices    = merged.shopPrices;
+    taglines      = merged.taglines;
 
-    // Patch back to the Gist
+    // Persist
     const patchResp = await fetch(`https://api.github.com/gists/${config.gistId}`, {
       method: 'PATCH',
       headers: {
@@ -1823,106 +1868,127 @@ async function saveData() {
         'Accept': 'application/vnd.github.v3+json'
       },
       body: JSON.stringify({
-        files: {
-          'spider-league.json': { content: JSON.stringify(merged, null, 2) }
-        }
+        files: { 'spider-league.json': { content: JSON.stringify(merged, null, 2) } }
       })
     });
 
     if (!patchResp.ok) {
-      console.error('Failed to patch Gist', await patchResp.text());
+      console.error('Failed to patch Gist:', await patchResp.text());
       return false;
     }
+
     return true;
   } catch (e) {
-    console.error('saveData error', e);
+    console.error('saveData error:', e);
     return false;
   } finally {
     __saving = false;
   }
 }
 
-// If you call saveDataNow() anywhere, forward to saveData()
+// Some code calls saveDataNow(); keep a shim.
 async function saveDataNow() { return saveData(); }
 
-        async function addSpider() {
-            if (!currentUser) {
-                showStatus('addStatus', 'Please login first!', 'error');
-                return;
-            }
+// ---------- ADD SPIDER (replace your addSpider) ----------
+async function addSpider() {
+  if (!currentUser) {
+    showStatus('addStatus', 'Please log in first!', 'error');
+    return;
+  }
 
-            const name = document.getElementById('spiderName').value.trim();
-            const latinName = document.getElementById('spiderLatinName').value.trim();
-            const imageUrl = document.getElementById('spiderImage').value.trim();
-            const strength = parseInt(document.getElementById('strength').value);
-            const speed = parseInt(document.getElementById('speed').value);
-            const size = parseInt(document.getElementById('size').value);
-            const venom = parseInt(document.getElementById('venom').value);
-            const toughness = parseInt(document.getElementById('toughness').value);
-            const customFields = getCustomFields();
+  const nameEl  = document.getElementById('spiderName');
+  const latinEl = document.getElementById('spiderLatinName');
+  const imgEl   = document.getElementById('spiderImage');
 
-            if (!name) {
-                showStatus('addStatus', 'Please enter a spider name!', 'error');
-                return;
-            }
+  const name  = (nameEl?.value || '').trim();
+  const latin = (latinEl?.value || '').trim();
+  const image = (uploadedImageData || imgEl?.value || '').trim();
 
-            const totalPoints = strength + speed + size + venom + toughness;
-            if (totalPoints !== 100) {
-                showStatus('addStatus', 'You must use exactly 100 stat points!', 'error');
-                return;
-            }
+  if (!name)  { showStatus('addStatus', 'Enter a spider name', 'error'); return; }
+  if (!image) { showStatus('addStatus', 'Add an image or image URL', 'error'); return; }
 
-            let finalImage;
-            if (uploadedImageData) {
-                finalImage = uploadedImageData;
-            } else if (imageUrl) {
-                finalImage = imageUrl;
-            } else {
-                finalImage = 'https://via.placeholder.com/300x200?text=Spider';
-            }
+  // Pull stat inputs (your UI uses readonly inputs with +/- controls)
+  const strength   = parseInt(document.getElementById('strength').value, 10) || 1;
+  const speed      = parseInt(document.getElementById('speed').value, 10) || 1;
+  const size       = parseInt(document.getElementById('size').value, 10) || 1;
+  const venom      = parseInt(document.getElementById('venom').value, 10) || 1;
+  const toughInput = parseInt(document.getElementById('toughness').value, 10) || 1;
 
-            const spider = {
-                id: Date.now(),
-                name,
-                latinName: latinName || null,
-                image: finalImage,
-                owner: currentUser,
-                ownerHistory: [currentUser],
-                strength,
-                speed,
-                size,
-                venom,
-                toughness,
-                maxToughness: toughness,
-                customFields: customFields,
-                level: 1,
-                xp: 0,
-                wins: 0,
-                losses: 0,
-                moves: null,
-                verified: false,
-                pending: true
-            };
+  // Max toughness starts equal to current toughness for new spiders
+  const maxToughness = Math.max(1, toughInput);
 
-            spiders.push(spider);
+  // Build the new spider (PENDING + not verified)
+  const newSpider = {
+    id: ensureId('spider_'),
+    name,
+    latinName: latin || null,
+    image,
+    owner: currentUser,
 
-            if (await saveData()) {
-                showStatus('addStatus', 'Spider submitted for admin approval!', 'success');
-                document.getElementById('spiderName').value = '';
-                document.getElementById('spiderLatinName').value = '';
-                document.getElementById('spiderImage').value = '';
-                document.getElementById('spiderImageFile').value = '';
-                document.getElementById('strength').value = 20;
-                document.getElementById('speed').value = 20;
-                document.getElementById('size').value = 20;
-                document.getElementById('venom').value = 20;
-                document.getElementById('toughness').value = 20;
-                document.getElementById('pointsCount').textContent = '100';
-                document.getElementById('imagePreview').style.display = 'none';
-                uploadedImageData = null;
-                clearCustomFields();
-            }
-        }
+    // core stats
+    level: 1,
+    strength,
+    speed,
+    size,
+    venom,
+
+    // toughness model
+    toughness: maxToughness,
+    maxToughness,
+
+    // flags for admin queue
+    pending: true,
+    verified: false,
+
+    // records
+    wins: 0,
+    losses: 0,
+
+    // moves (use your generator if present; otherwise ensureMoves will patch later)
+    moves: typeof generateMoves === 'function'
+      ? generateMoves({ level: 1 })
+      : [],
+
+    createdAt: new Date().toISOString()
+  };
+
+  // Optimistic add locally
+  spiders.push(newSpider);
+
+  // Save with conflict-proof merge
+  const ok = await saveData();
+  if (!ok) {
+    showStatus('addStatus', 'Could not save spider. Try again.', 'error');
+    // Optionally roll back local push if desired
+    return;
+  }
+
+  showStatus('addStatus', 'Spider submitted! Waiting for admin approval.', 'success');
+
+  // Clear the form
+  if (nameEl)  nameEl.value = '';
+  if (latinEl) latinEl.value = '';
+  if (imgEl)   imgEl.value = '';
+  uploadedImageData = null;
+  clearCustomFields?.();
+
+  // Reset point allocator UI if you use it
+  const pointsCountEl = document.getElementById('pointsCount');
+  if (pointsCountEl) pointsCountEl.textContent = '95';
+  ['strength','speed','size','venom','toughness'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = 1;
+  });
+
+  // Refresh UI
+  if (typeof renderSpiders === 'function') renderSpiders();
+
+  // If currently on Admin tab, refresh the queue
+  const adminTabVisible = document.getElementById('adminTabContent')?.classList.contains('active');
+  if (adminTabVisible && typeof renderAdminPanel === 'function') {
+    renderAdminPanel();
+  }
+}
 
         async function deleteSpider(id) {
             if (!confirm('Delete this spider?')) return;
