@@ -2103,13 +2103,13 @@ async function addSpider() {
                             <div style="background: rgba(255, 165, 0, 0.2); padding: 10px; border-radius: 8px; margin-top: 10px;">
                                 <p style="color: #ffa500; font-size: 0.9em; margin-bottom: 8px;">💊 Revive Spider:</p>
                                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    <button onclick="useItemOnSpider(${spider.id}, 'potion', 20)" style="flex: 1; padding: 8px; font-size: 0.85em;">Potion (+20)</button>
-                                    <button onclick="useItemOnSpider(${spider.id}, 'superPotion', 50)" style="flex: 1; padding: 8px; font-size: 0.85em;">Super (+50)</button>
-                                    <button onclick="useItemOnSpider(${spider.id}, 'fullRestore', 999)" style="flex: 1; padding: 8px; font-size: 0.85em;">Full Restore</button>
+                                    <button onclick="useItemOnSpider('${spider.id'}, 'potion', 20)" style="flex: 1; padding: 8px; font-size: 0.85em;">Potion (+20)</button>
+                                    <button onclick="useItemOnSpider('${spider.id'}, 'superPotion', 50)" style="flex: 1; padding: 8px; font-size: 0.85em;">Super (+50)</button>
+                                    <button onclick="useItemOnSpider('${spider.id'}, 'fullRestore', 999)" style="flex: 1; padding: 8px; font-size: 0.85em;">Full Restore</button>
                                 </div>
                             </div>
                         ` : ''}
-                        ${spider.owner === currentUser || currentUser === 'admin' ? `<button onclick="deleteSpider(${spider.id})" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
+                        ${spider.owner === currentUser || currentUser === 'admin' ? `<button onclick="deleteSpider('${spider.id}')">Delete</button>" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Delete</button>` : ''}
                     </div>
                 `;
             }).join('');
@@ -2158,107 +2158,104 @@ async function addSpider() {
 
         let isProcessingPurchase = false;
 
-        async function buyShopItem(itemKey) {
-            if (isProcessingPurchase) {
-                showStatus('shopStatus', 'Please wait, processing...', 'error');
-                return;
-            }
+async function buyShopItem(itemKey) {
+    if (isProcessingPurchase) {
+        showStatus('shopStatus', 'Please wait, processing...', 'error');
+        return;
+    }
 
-            if (!currentUser) {
-                showStatus('shopStatus', 'Please login first!', 'error');
-                return;
-            }
+    if (!currentUser) {
+        showStatus('shopStatus', 'Please login first!', 'error');
+        return;
+    }
 
-            const user = users.find(u => u.username === currentUser);
-            if (!user) {
-                showStatus('shopStatus', 'User not found! Please login again.', 'error');
-                return;
-            }
+    // **FIX: Load fresh data first**
+    await loadData();
 
-            const price = shopPrices[itemKey];
-            if (!price) {
-                showStatus('shopStatus', 'Invalid item!', 'error');
-                return;
-            }
+    const user = users.find(u => u.username === currentUser);
+    if (!user) {
+        showStatus('shopStatus', 'User not found! Please login again.', 'error');
+        return;
+    }
 
-            const currentCoins = user.coins || 0;
-            if (currentCoins < price) {
-                showStatus('shopStatus', `Not enough coins! You have ${currentCoins}, need ${price} coins.`, 'error');
-                return;
-            }
+    const price = shopPrices[itemKey];
+    if (!price) {
+        showStatus('shopStatus', 'Invalid item!', 'error');
+        return;
+    }
 
-            isProcessingPurchase = true;
+    const currentCoins = user.coins || 0;
+    if (currentCoins < price) {
+        showStatus('shopStatus', `Not enough coins! You have ${currentCoins}, need ${price} coins.`, 'error');
+        return;
+    }
 
-            try {
-                user.coins = currentCoins - price;
-                
-                if (!user.inventory) {
-                    user.inventory = {};
-                }
-                
-                user.inventory[itemKey] = (user.inventory[itemKey] || 0) + 1;
+    isProcessingPurchase = true;
 
-                const saveSuccess = await saveData();
-                
-                if (saveSuccess) {
-                    showStatus('shopStatus', `Successfully purchased ${itemKey}!`, 'success');
-                    updateCoins();
-                    renderInventory();
-                } else {
-                    user.coins = currentCoins;
-                    user.inventory[itemKey]--;
-                    if (user.inventory[itemKey] <= 0) {
-                        delete user.inventory[itemKey];
-                    }
-                    showStatus('shopStatus', 'Purchase failed - please try again', 'error');
-                }
-            } catch (error) {
-                console.error('Purchase error:', error);
-                user.coins = currentCoins;
-                if (user.inventory[itemKey]) {
-                    user.inventory[itemKey]--;
-                    if (user.inventory[itemKey] <= 0) {
-                        delete user.inventory[itemKey];
-                    }
-                }
-                showStatus('shopStatus', 'Purchase failed - please try again', 'error');
-            } finally {
-                setTimeout(() => {
-                    isProcessingPurchase = false;
-                }, 500);
-            }
+    try {
+        user.coins = currentCoins - price;
+        
+        if (!user.inventory) {
+            user.inventory = {};
         }
+        
+        user.inventory[itemKey] = (user.inventory[itemKey] || 0) + 1;
 
-        async function useItemOnSpider(spiderId, itemKey, healAmount) {
-            if (!currentUser) {
-                alert('Please login first!');
-                return;
-            }
-
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider || spider.owner !== currentUser) {
-                alert('You can only use items on your own spiders!');
-                return;
-            }
-
-            const inventory = getUserInventory();
-            if (!inventory[itemKey] || inventory[itemKey] <= 0) {
-                alert(`You don't have any ${itemKey}! Buy some from the shop.`);
-                return;
-            }
-
-            inventory[itemKey]--;
-            setUserInventory(inventory);
-
-            const actualHeal = Math.min(healAmount, spider.maxToughness - spider.toughness);
-            spider.toughness = Math.min(spider.toughness + healAmount, spider.maxToughness);
-
-            if (await saveData()) {
-                alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} Toughness and is now at ${spider.toughness}/${spider.maxToughness} Toughness!`);
-                renderSpiders();
-                renderInventory();
-            }
+        const saveSuccess = await saveData();
+        
+        if (saveSuccess) {
+            showStatus('shopStatus', `Successfully purchased ${itemKey}!`, 'success');
+            updateCoins();
+            renderInventory();
+        } else {
+            // Rollback not needed since saveData() already merged
+            await loadData(); // Just reload to get correct state
+            showStatus('shopStatus', 'Purchase failed - please try again', 'error');
         }
+    } catch (error) {
+        console.error('Purchase error:', error);
+        await loadData(); // Reload to get correct state
+        showStatus('shopStatus', 'Purchase failed - please try again', 'error');
+    } finally {
+        setTimeout(() => {
+            isProcessingPurchase = false;
+        }, 500);
+    }
+}
+
+async function useItemOnSpider(spiderId, itemKey, healAmount) {
+    if (!currentUser) {
+        alert('Please login first!');
+        return;
+    }
+
+    // **FIX: Load fresh data first**
+    await loadData();
+
+    const spider = spiders.find(s => s.id === spiderId);
+    if (!spider || spider.owner !== currentUser) {
+        alert('You can only use items on your own spiders!');
+        return;
+    }
+
+    const inventory = getUserInventory();
+    if (!inventory[itemKey] || inventory[itemKey] <= 0) {
+        alert(`You don't have any ${itemKey}! Buy some from the shop.`);
+        return;
+    }
+
+    inventory[itemKey]--;
+    setUserInventory(inventory);
+
+    const actualHeal = Math.min(healAmount, spider.maxToughness - spider.toughness);
+    spider.toughness = Math.min(spider.toughness + healAmount, spider.maxToughness);
+
+    if (await saveData()) {
+        alert(`Used ${itemKey}! ${spider.name} restored ${actualHeal} Toughness and is now at ${spider.toughness}/${spider.maxToughness} Toughness!`);
+        renderSpiders();
+        renderInventory();
+    }
+}
 
         function checkAdminAccess() {
             if (currentUser === 'admin') {
@@ -2786,40 +2783,142 @@ function levelUp(spider) {
 
 // ---------- start battle (validates wager) ----------
 async function startBattle(playerId, enemyId, wager = 0) {
-  const playerSpider = spiders.find(s => s.id === playerId);
-  const enemySpider  = spiders.find(s => s.id === enemyId);
-  if (!playerSpider || !enemySpider) return;
-
-  // sanitize wager
-  wager = Math.max(0, Math.floor(Number(wager) || 0));
-  localStorage.setItem('lastWager', String(wager));
-
-  // validate coins for both players
-  const playerUser = getUserByName(currentUser);
-  const enemyUser  = getUserByName(enemySpider.owner);
-  if (!playerUser || !enemyUser) {
-    alert('Could not find player accounts.');
+  // Validate IDs exist and are strings
+  if (!playerId || !enemyId || typeof playerId !== 'string' || typeof enemyId !== 'string') {
+    alert('Invalid spider selection! Please try again.');
+    console.error('Invalid spider IDs:', { playerId, enemyId });
     return;
   }
-  if (playerUser.coins == null) playerUser.coins = 0;
-  if (enemyUser.coins == null) enemyUser.coins = 0;
 
+  // Prevent battling yourself
+  if (playerId === enemyId) {
+    alert('You cannot battle your own spider!');
+    return;
+  }
+
+  // Load fresh data to ensure we have latest spider/user info
+  await loadData();
+
+  // Find the spiders
+  const playerSpider = spiders.find(s => s.id === playerId);
+  const enemySpider  = spiders.find(s => s.id === enemyId);
+  
+  if (!playerSpider) {
+    alert('Could not find your spider! It may have been deleted.');
+    return;
+  }
+  
+  if (!enemySpider) {
+    alert('Could not find opponent spider! It may have been deleted.');
+    return;
+  }
+
+  // Verify ownership
+  if (playerSpider.owner !== currentUser) {
+    alert('You can only battle with your own spiders!');
+    return;
+  }
+
+  // Check if spiders are healthy
+  if (playerSpider.toughness <= 0) {
+    alert('Your spider has fainted! Revive it before battling.');
+    return;
+  }
+
+  if (enemySpider.toughness <= 0) {
+    alert('That spider has fainted and cannot battle!');
+    return;
+  }
+
+  // Check if spiders are verified
+  if (!playerSpider.verified) {
+    alert('Your spider must be verified by an admin before battling!');
+    return;
+  }
+
+  if (!enemySpider.verified) {
+    alert('That spider is not yet verified and cannot battle!');
+    return;
+  }
+
+  // Check if either spider is already in battle
+  if (isSpiderInBattle(playerId)) {
+    alert('Your spider is already in a battle!');
+    return;
+  }
+
+  if (isSpiderInBattle(enemyId)) {
+    alert('That spider is already in a battle!');
+    return;
+  }
+
+  // Sanitize and validate wager
+  wager = Math.max(0, Math.floor(Number(wager) || 0));
+  
+  if (isNaN(wager) || wager < 0) {
+    wager = 0;
+  }
+
+  // Store wager preference
+  localStorage.setItem('lastWager', String(wager));
+
+  // Validate coins for both players if there's a wager
   if (wager > 0) {
-    if (playerUser.coins < wager) {
-      alert(`You don't have enough coins for this wager. You need ${wager} coins.`);
+    const playerUser = getUserByName(currentUser);
+    const enemyUser  = getUserByName(enemySpider.owner);
+    
+    if (!playerUser) {
+      alert('Could not find your account. Please log in again.');
       return;
     }
+    
+    if (!enemyUser) {
+      alert(`Could not find opponent's account (@${enemySpider.owner}).`);
+      return;
+    }
+
+    // Ensure coins property exists
+    if (playerUser.coins == null) playerUser.coins = 0;
+    if (enemyUser.coins == null) enemyUser.coins = 0;
+
+    // Check if player has enough coins
+    if (playerUser.coins < wager) {
+      alert(`You don't have enough coins for this wager!\n\nYou have: ${playerUser.coins} coins\nWager amount: ${wager} coins\n\nReduce your wager or earn more coins.`);
+      return;
+    }
+
+    // Check if opponent has enough coins
     if (enemyUser.coins < wager) {
-      alert(`Opponent @${enemyUser.username} doesn't have enough coins for this wager.`);
+      alert(`Opponent @${enemyUser.username} doesn't have enough coins for this wager.\n\nThey have: ${enemyUser.coins} coins\nWager amount: ${wager} coins\n\nChoose a lower wager or a different opponent.`);
       return;
     }
   }
 
+  // Ensure both spiders have moves
   ensureMoves(playerSpider);
   ensureMoves(enemySpider);
 
-  activeBattles.push({ playerSpiderId: playerSpider.id, enemySpiderId: enemySpider.id });
+  // Verify moves were generated
+  if (!playerSpider.moves || playerSpider.moves.length === 0) {
+    alert('Your spider has no moves! Please contact an admin.');
+    console.error('Player spider has no moves:', playerSpider);
+    return;
+  }
 
+  if (!enemySpider.moves || enemySpider.moves.length === 0) {
+    alert('Opponent spider has no moves! Please contact an admin.');
+    console.error('Enemy spider has no moves:', enemySpider);
+    return;
+  }
+
+  // Mark spiders as in battle
+  activeBattles.push({ 
+    playerSpiderId: playerSpider.id, 
+    enemySpiderId: enemySpider.id,
+    startedAt: new Date().toISOString()
+  });
+
+  // Create battle state with deep copies to avoid mutation
   window.battleState = {
     turn: 'player',
     player: {
@@ -2830,17 +2929,25 @@ async function startBattle(playerId, enemyId, wager = 0) {
       spider: JSON.parse(JSON.stringify(enemySpider)),
       currentToughness: enemySpider.toughness
     },
-    log: [],
+    log: [`Battle started! ${playerSpider.name} vs ${enemySpider.name}!`],
     effects: { player: [], enemy: [] },
-    wager
+    wager: wager
   };
 
+  // Update UI and save
   updateBattleTabIndicator();
   await _save();
   renderBattle();
 
+  // Switch to battle view
   document.getElementById('battleOpponentPhase').classList.add('hidden');
   document.getElementById('battleArenaPhase').classList.remove('hidden');
+
+  console.log('Battle started successfully:', {
+    player: playerSpider.name,
+    enemy: enemySpider.name,
+    wager: wager
+  });
 }
 
 // ---------- damage model ----------
