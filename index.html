@@ -2289,8 +2289,8 @@ async function addSpider() {
                             <div class="stat"><span>${field.name}:</span><span>${field.value}</span></div>
                         `).join('') : ''}
                         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
-                            <button onclick="verifySpider(${spider.id}, true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
-                            <button onclick="verifySpider(${spider.id}, false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
+                        	<button onclick="verifySpider('${spider.id}', true)" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a6a0 100%); padding: 12px 40px;">✓ Approve</button>
+							<button onclick="verifySpider('${spider.id}', false)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 12px 40px;">✕ Deny</button>
                         </div>
                     </div>
                 `).join('');
@@ -2317,28 +2317,50 @@ async function addSpider() {
             `).join('');
         }
 
-        async function verifySpider(spiderId, approved) {
-            const spider = spiders.find(s => s.id === spiderId);
-            if (!spider) return;
+async function verifySpider(spiderId, approved) {
+  if (currentUser !== 'admin') {
+    alert('Admin only.');
+    return;
+  }
 
-            if (approved) {
-                spider.verified = true;
-                spider.pending = false;
-                spider.moves = generateMoves(spider);
-                
-                const owner = users.find(u => u.username === spider.owner);
-                if (owner) owner.coins += 50;
-                
-                showStatus('adminStatus', `Spider approved! ${spider.owner} earned 50 coins.`, 'success');
-            } else {
-                spiders = spiders.filter(s => s.id !== spiderId);
-                showStatus('adminStatus', 'Spider denied and removed.', 'error');
-            }
+  const idx = spiders.findIndex(s => s.id === spiderId);
+  if (idx === -1) return;
+  const spider = spiders[idx];
 
-            await saveData();
-            renderAdminPanel();
+  if (approved) {
+    spider.verified = true;
+    spider.pending = false;
+
+    try {
+      if (!spider.moves || !Array.isArray(spider.moves) || spider.moves.length === 0) {
+        if (typeof generateMoves === 'function') {
+          spider.moves = generateMoves(spider);
+        } else if (Array.isArray(MOVE_LIST) && MOVE_LIST.length) {
+          spider.moves = MOVE_LIST.slice(0, 4).map(m => ({
+            name: m.name, stat: m.stat, basePower: m.basePower, effect: m.effect || null
+          }));
+        } else {
+          spider.moves = [];
         }
+      }
+    } catch (e) {
+      console.error('generateMoves failed:', e);
+      spider.moves = spider.moves || [];
+    }
 
+    const owner = users.find(u => u.username === spider.owner);
+    if (owner) owner.coins = (owner.coins || 0) + 50;
+
+    showStatus('adminStatus', `Spider approved! ${spider.owner} earned 50 coins.`, 'success');
+  } else {
+    spiders = spiders.filter(s => s.id !== spiderId);
+    showStatus('adminStatus', 'Spider denied and removed.', 'error');
+  }
+
+  await saveData();
+  if (typeof renderAdminPanel === 'function') renderAdminPanel();
+  if (typeof renderSpiders === 'function') renderSpiders();
+}
         async function saveMoveList() {
             try {
                 MOVE_LIST = JSON.parse(document.getElementById('adminMoves').value);
@@ -2503,7 +2525,7 @@ function renderBattleSelect() {
     return `
       <div class="spider-card"
            style="cursor:${inBattle?'not-allowed':'pointer'};opacity:${inBattle?0.5:1};"
-           ${inBattle ? '' : `onclick="selectBattleSpider(${spider.id})"`}>
+           ${inBattle ? '' : `onclick="selectBattleSpider('${spider.id}')"`}>
         ${inBattle ? '<div style="background: rgba(255,255,255,0.15); padding:6px 10px; border-radius:10px; margin-bottom:10px; font-size:12px;">⚔️ In Battle</div>' : ''}
         <img src="${spider.image}" class="spider-image" alt="${spider.name}">
         <div class="spider-name">${spider.name}</div>
