@@ -1577,46 +1577,60 @@
             if (config.gistId) loadData();
         }
 
-      async function register() {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
+async function register() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
 
-  if (!username || !password) {
-    showStatus('loginStatus', 'Enter username and password!', 'error'); return;
-  }
-  if (username.length < 3) { showStatus('loginStatus', 'Username must be 3+ characters', 'error'); return; }
-  if (password.length < 4) { showStatus('loginStatus', 'Password must be 4+ characters', 'error'); return; }
+    if (!username || !password) {
+        showStatus('loginStatus', 'Enter username and password!', 'error');
+        return;
+    }
+    if (username.length < 3) {
+        showStatus('loginStatus', 'Username must be 3+ characters', 'error');
+        return;
+    }
+    if (password.length < 4) {
+        showStatus('loginStatus', 'Password must be 4+ characters', 'error');
+        return;
+    }
 
-  const confirmed = confirm(
-    '⚠️ SECURITY WARNING ⚠️\n\nYour password will be stored in a GitHub Gist.\nUse a simple, unique password only.'
-  );
-  if (!confirmed) return;
+    const confirmed = confirm(
+        '⚠️ SECURITY WARNING ⚠️\n\nYour password will be stored in a GitHub Gist.\nUse a simple, unique password only.'
+    );
+    if (!confirmed) return;
 
-  // Always re-fetch latest before deciding if a username exists
-  const okBeforeSave = await saveData(); // pulls latest + merges in-memory
-  if (!okBeforeSave) { showStatus('loginStatus', 'Could not sync with server. Try again.', 'error'); return; }
+    // **FIX: Always fetch latest data before checking usernames**
+    await loadData();
 
-  if ((users || []).some(u => u.username === username)) {
-    showStatus('loginStatus', 'Username already taken!', 'error'); return;
-  }
+    // Now check if username exists with the fresh data
+    if (users.some(u => u.username === username)) {
+        showStatus('loginStatus', 'Username already taken!', 'error');
+        return;
+    }
 
-  users.push({
-    username,
-    password, // consider hashing later
-    coins: 100,
-    inventory: {},
-    createdAt: new Date().toISOString()
-  });
+    // Add the new user
+    users.push({
+        username,
+        password,
+        coins: 100,
+        inventory: {},
+        createdAt: new Date().toISOString()
+    });
 
-  const ok = await saveData();
-  if (!ok) {
-    showStatus('loginStatus', 'Could not save account. Try again.', 'error'); return;
-  }
+    // Save immediately
+    const saveSuccess = await saveData();
+    
+    if (!saveSuccess) {
+        showStatus('loginStatus', 'Registration failed. Please try again.', 'error');
+        // Remove the user we just added since save failed
+        users = users.filter(u => u.username !== username);
+        return;
+    }
 
-  currentUser = username;
-  window.localStorage.setItem('spiderUser', username);
-  showUserInfo();
-  showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
+    currentUser = username;
+    window.localStorage.setItem('spiderUser', username);
+    showUserInfo();
+    showStatus('loginStatus', 'Registered! You start with 100 coins!', 'success');
 }
 
         async function login() {
@@ -2618,12 +2632,11 @@ function renderOpponents() {
           </div>
         </div>
         <div class="stat"><span>Power:</span><span>${derivedPower(spider)}</span></div>
-        <button onclick="startBattle(${selectedBattleSpider.id}, ${spider.id}, Number(document.getElementById('battleWager').value||0))">Challenge!</button>
+        <button onclick="startBattle('${selectedBattleSpider.id}', '${spider.id}', Number(document.getElementById('battleWager').value||0))">Challenge!</button>
       </div>
     `;
   }).join('');
 }
-
 // ---------- status effects engine ----------
 /*
   Effects stored as { type, turns, magnitude?, meta? }:
